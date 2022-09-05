@@ -3,8 +3,13 @@
 
 #include <stdint.h>
 
+typedef enum { 
+  Valid_Positive, Valid_Negative, Overflow_Positive, Overflow_Negative, Underflow_Positive, Underflow_Negative 
+} TagType;
+
 typedef struct {
-  // TODO: add fields
+  uint64_t whole, frac;
+  TagType tag;
 } Fixedpoint;
 
 // Create a Fixedpoint value representing an integer.
