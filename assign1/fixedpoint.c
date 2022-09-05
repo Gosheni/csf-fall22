@@ -11,6 +11,7 @@ static Fixedpoint DUMMY;
 Fixedpoint fixedpoint_create(uint64_t whole) {
   Fixedpoint fp;
   fp.whole = whole;
+  fp.frac = 0;
   fp.tag = Valid_Positive;
   return fp;
 }
