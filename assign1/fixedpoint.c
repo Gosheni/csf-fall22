@@ -51,9 +51,13 @@ Fixedpoint fixedpoint_sub(Fixedpoint left, Fixedpoint right) {
 }
 
 Fixedpoint fixedpoint_negate(Fixedpoint val) {
-  // TODO: implement
-  assert(0);
-  return DUMMY;
+  if (val.tag == Valid_Negative) val.tag = Valid_Positive;
+  if (val.tag == Valid_Positive) val.tag = Valid_Negative;
+  if (val.tag == Overflow_Negative) val.tag = Overflow_Positive;
+  if (val.tag == Overflow_Positive) val.tag = Overflow_Negative;
+  if (val.tag == Underflow_Negative) val.tag = Underflow_Positive;
+  if (val.tag == Underflow_Positive) val.tag = Underflow_Negative;
+  return val;
 }
 
 Fixedpoint fixedpoint_halve(Fixedpoint val) {
@@ -90,8 +94,9 @@ int fixedpoint_is_err(Fixedpoint val) {
 }
 
 int fixedpoint_is_neg(Fixedpoint val) {
-  // TODO: implement
-  assert(0);
+  if (val.tag == Valid_Negative) {
+    return 1;
+  }
   return 0;
 }
 
@@ -120,8 +125,9 @@ int fixedpoint_is_underflow_pos(Fixedpoint val) {
 }
 
 int fixedpoint_is_valid(Fixedpoint val) {
-  // TODO: implement
-  assert(0);
+  if (val.tag == Valid_Positive || val.tag == Valid_Negative) {
+    return 1;
+  }
   return 0;
 }
 
