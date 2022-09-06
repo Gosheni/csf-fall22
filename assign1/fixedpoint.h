@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 typedef enum { 
-  Valid_Positive, Valid_Negative, Overflow_Positive, Overflow_Negative, Underflow_Positive, Underflow_Negative 
+  Valid_Positive, Valid_Negative, Overflow_Positive, Overflow_Negative, Underflow_Positive, Underflow_Negative, Error 
 } TagType;
 
 typedef struct {
