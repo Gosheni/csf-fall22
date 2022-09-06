@@ -26,9 +26,23 @@ Fixedpoint fixedpoint_create2(uint64_t whole, uint64_t frac) {
 }
 
 Fixedpoint fixedpoint_create_from_hex(const char *hex) {
-  // TODO: implement
-  assert(0);
-  return DUMMY; 
+  Fixedpoint fp;
+  char hex2[strlen(hex) + 1];
+  strcpy(hex2, hex);
+  if (hex[0] == '-') {
+    fp.tag = Valid_Negative;
+    memcpy(hex2, &hex[1], strlen(hex));
+  } else {
+    fp.tag = Valid_Positive;
+    memcpy(hex2, &hex[0], strlen(hex)+1);
+  }
+  char* token = strtok(hex2, ".");
+  fp.whole = (uint64_t) strtol(token, NULL, 16);
+  token = strtok(NULL, ".");
+  fp.frac = (uint64_t) strtol(token, NULL, 16);
+  int i = (16 - strlen(token)) * 4;
+  fp.frac <<= i;
+  return fp; 
 }
 
 uint64_t fixedpoint_whole_part(Fixedpoint val) {
@@ -93,9 +107,12 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       if (left.frac > right.frac) {
         fp.frac = left.frac - right.frac;
         fp.tag = left.tag;
-      } else {
+      } else if (left.frac < right.frac) {
         fp.frac = right.frac - left.frac;
         fp.tag = right.tag;
+      } else {
+        fp.frac = 0;
+        fp.tag = Valid_Positive;
       }
     }
   }
@@ -115,8 +132,10 @@ Fixedpoint fixedpoint_sub(Fixedpoint left, Fixedpoint right) {
 
 Fixedpoint fixedpoint_negate(Fixedpoint val) {
   assert(fixedpoint_is_valid(val));
-  if (val.tag == Valid_Negative) val.tag = Valid_Positive;
-  if (val.tag == Valid_Positive) val.tag = Valid_Negative;
+  if (val.whole != 0 || val.frac != 0) {
+    if (val.tag == Valid_Negative) val.tag = Valid_Positive;
+    else if (val.tag == Valid_Positive) val.tag = Valid_Negative;
+  }
   return val;
 }
 
