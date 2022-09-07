@@ -57,33 +57,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
   assert(fixedpoint_is_valid(left));
   assert(fixedpoint_is_valid(right));
   Fixedpoint fp;
-  if (fixedpoint_is_neg(left) && fixedpoint_is_neg(right)) {
-    uint64_t sum_frac = left.frac + right.frac;
-    uint64_t sum = left.whole + right.whole;
-    if(sum_frac < left.frac || sum_frac < right.frac){
-      fp.frac = sum_frac;
-      sum++;
-    }
-    if (sum < left.whole || sum < right.whole) {
-      fp.tag = Overflow_Negative;
-    } else {
-      fp.tag = Valid_Negative;
-    }
-    fp.whole = sum;
-  } else if (!fixedpoint_is_neg(left) && !fixedpoint_is_neg(right)) {
-    uint64_t sum_frac = left.frac + right.frac;
-    uint64_t sum = left.whole + right.whole;
-    if(sum_frac < left.frac || sum_frac < right.frac){
-      fp.frac = sum_frac;
-      sum++;
-    }
-    if (sum < left.whole || sum < right.whole) {
-      fp.tag = Overflow_Positive;
-    } else {
-      fp.tag = Valid_Non_Negative;
-    }
-    fp.whole = sum;
-  } else {
+  if (fixedpoint_is_neg(left) ^ fixedpoint_is_neg(right)) {
     if (right.whole > left.whole) {
       fp.whole = right.whole - left.whole;
       if (left.frac > right.frac) {
@@ -115,6 +89,21 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
         fp.tag = Valid_Non_Negative;
       }
     }
+  } else {
+    uint64_t sum_frac = left.frac + right.frac;
+    uint64_t sum = left.whole + right.whole;
+    if(sum_frac < left.frac || sum_frac < right.frac){
+      fp.frac = sum_frac;
+      sum++;
+    }
+    if (sum < left.whole || sum < right.whole) {
+      if (fixedpoint_is_neg(left)) fp.tag = Overflow_Negative;
+      else fp.tag = Overflow_Positive;
+    } else {
+      if (fixedpoint_is_neg(left)) fp.tag = Valid_Negative;
+      else fp.tag = Valid_Non_Negative;
+    }
+    fp.whole = sum;
   }
   return fp;
 }
