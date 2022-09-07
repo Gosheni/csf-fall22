@@ -13,7 +13,7 @@ Fixedpoint fixedpoint_create(uint64_t whole) {
   Fixedpoint fp;
   fp.whole = whole;
   fp.frac = 0;
-  fp.tag = Valid_Positive;
+  fp.tag = Valid_Non_Negative;
   return fp;
 }
 
@@ -21,7 +21,7 @@ Fixedpoint fixedpoint_create2(uint64_t whole, uint64_t frac) {
   Fixedpoint fp;
   fp.whole = whole;
   fp.frac = frac;
-  fp.tag = Valid_Positive;
+  fp.tag = Valid_Non_Negative;
   return fp;
 }
 
@@ -33,7 +33,7 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
     fp.tag = Valid_Negative;
     memcpy(hex2, &hex[1], strlen(hex));
   } else {
-    fp.tag = Valid_Positive;
+    fp.tag = Valid_Non_Negative;
     memcpy(hex2, &hex[0], strlen(hex)+1);
   }
   char* token = strtok(hex2, ".");
@@ -80,7 +80,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     if (sum < left.whole || sum < right.whole) {
       fp.tag = Overflow_Positive;
     } else {
-      fp.tag = Valid_Positive;
+      fp.tag = Valid_Non_Negative;
     }
     fp.whole = sum;
   } else {
@@ -112,7 +112,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
         fp.tag = right.tag;
       } else {
         fp.frac = 0;
-        fp.tag = Valid_Positive;
+        fp.tag = Valid_Non_Negative;
       }
     }
   }
@@ -123,7 +123,7 @@ Fixedpoint fixedpoint_sub(Fixedpoint left, Fixedpoint right) {
   assert(fixedpoint_is_valid(left));
   assert(fixedpoint_is_valid(right));
   if (fixedpoint_is_neg(right)) {
-    right.tag = Valid_Positive;
+    right.tag = Valid_Non_Negative;
   } else {
     right.tag = Valid_Negative;
   }
@@ -133,8 +133,8 @@ Fixedpoint fixedpoint_sub(Fixedpoint left, Fixedpoint right) {
 Fixedpoint fixedpoint_negate(Fixedpoint val) {
   assert(fixedpoint_is_valid(val));
   if (val.whole != 0 || val.frac != 0) {
-    if (val.tag == Valid_Negative) val.tag = Valid_Positive;
-    else if (val.tag == Valid_Positive) val.tag = Valid_Negative;
+    if (val.tag == Valid_Negative) val.tag = Valid_Non_Negative;
+    else if (val.tag == Valid_Non_Negative) val.tag = Valid_Negative;
   }
   return val;
 }
@@ -186,7 +186,7 @@ int fixedpoint_compare(Fixedpoint left, Fixedpoint right) {
 }
 
 int fixedpoint_is_zero(Fixedpoint val) {
-  if (val.tag == Valid_Positive || val.tag == Valid_Negative) {
+  if (val.tag == Valid_Non_Negative || val.tag == Valid_Negative) {
     if (val.whole == 0 && val.frac == 0) {
       return 1;
     }
@@ -236,7 +236,7 @@ int fixedpoint_is_underflow_pos(Fixedpoint val) {
 }
 
 int fixedpoint_is_valid(Fixedpoint val) {
-  if (val.tag == Valid_Positive || val.tag == Valid_Negative) {
+  if (val.tag == Valid_Non_Negative || val.tag == Valid_Negative) {
     return 1;
   }
   return 0;
