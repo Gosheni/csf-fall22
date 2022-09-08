@@ -27,21 +27,46 @@ Fixedpoint fixedpoint_create2(uint64_t whole, uint64_t frac) {
 
 Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   Fixedpoint fp;
-  char hex2[strlen(hex) + 1];
-  strcpy(hex2, hex);
   if (hex[0] == '-') {
     fp.tag = Valid_Negative;
-    memcpy(hex2, &hex[1], strlen(hex));
-  } else {
+    hex++;
+  }else{
     fp.tag = Valid_Non_Negative;
-    memcpy(hex2, &hex[0], strlen(hex)+1);
   }
-  char* token = strtok(hex2, ".");
-  fp.whole = (uint64_t) strtol(token, NULL, 16);
-  token = strtok(NULL, ".");
-  fp.frac = (uint64_t) strtol(token, NULL, 16);
-  int i = (16 - strlen(token)) * 4;
-  fp.frac <<= i;
+
+  int error = 0;
+  uint64_t whole = 0;
+  uint64_t frac = 0;
+  int count = 0;
+  uint64_t *ip = &whole;
+  while (*hex) {
+    uint8_t c = *hex++;
+    count += 1;
+    if (c >= '0' && c <= '9') {
+      c = c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+      c = (c - 'a') + 10;
+    } else if (c >= 'A' && c <= 'F') {
+      c = (c - 'A') + 10;
+    } else if (c == '.' && ip == &whole) {
+      ip = &frac;
+      count = 0;
+      continue;
+    } else {
+      error = 1;
+      break;
+    }
+
+    if (count > 16) {
+      error = 1;
+      break;
+    }
+
+    *ip = (*ip << 4) | (c);
+  }
+  if(error) fp.tag = Error;
+  fp.whole = whole;
+  fp.frac = frac;
   return fp; 
 }
 
@@ -184,8 +209,9 @@ int fixedpoint_is_zero(Fixedpoint val) {
 }
 
 int fixedpoint_is_err(Fixedpoint val) {
-  // TODO: implement
-  assert(0);
+  if(val.tag == Error){
+    return 1;
+  }
   return 0;
 }
 
@@ -233,7 +259,7 @@ int fixedpoint_is_valid(Fixedpoint val) {
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
   // TODO: implement
-  assert(0);
+  assert(fixedpoint_is_valid(val));
   char *s = malloc(20);
   strcpy(s, "<invalid>");
   return s;
