@@ -7,8 +7,12 @@
 typedef struct {
   Fixedpoint zero;
   Fixedpoint one;
+  Fixedpoint ten;
+  Fixedpoint thousand;
   Fixedpoint one_half;
   Fixedpoint one_fourth;
+  Fixedpoint odd_frac1;
+  Fixedpoint odd_frac2;
   Fixedpoint large1;
   Fixedpoint large2;
   Fixedpoint max;
@@ -30,6 +34,18 @@ void test_add(TestObjs *objs);
 void test_sub(TestObjs *objs);
 void test_is_overflow_pos(TestObjs *objs);
 void test_is_err(TestObjs *objs);
+void test_create(TestObjs *objs);
+void test_create_2(TestObjs *objs);
+void test_halve(TestObjs *objs);
+void test_double(TestObjs *objs);
+void test_compare(TestObjs *objs);
+void test_is_zero(TestObjs *objs);
+void test_is_neg(TestObjs *objs);
+void test_is_overflow_neg(TestObjs *objs);
+void test_is_underflow_pos(TestObjs *objs);
+void test_is_underflow_neg(TestObjs *objs);
+void test_is_valid(TestObjs *objs);
+
 // TODO: add more test functions
 
 int main(int argc, char **argv) {
@@ -49,7 +65,13 @@ int main(int argc, char **argv) {
   TEST(test_add);
   TEST(test_sub);
   TEST(test_is_overflow_pos);
+  TEST(test_is_overflow_neg);
+  TEST(test_is_underflow_pos);
+  TEST(test_is_underflow_neg);
   TEST(test_is_err);
+  TEST(test_is_zero);
+  TEST(test_is_neg);
+  TEST(test_compare);
 
   // IMPORTANT: if you add additional test functions (which you should!),
   // make sure they are included here.  E.g., if you add a test function
@@ -67,8 +89,12 @@ TestObjs *setup(void) {
 
   objs->zero = fixedpoint_create(0UL);
   objs->one = fixedpoint_create(1UL);
+  objs->ten = fixedpoint_create(0xaUL);
+  objs->thousand = fixedpoint_create(0x3e8UL);
   objs->one_half = fixedpoint_create2(0UL, 0x8000000000000000UL);
   objs->one_fourth = fixedpoint_create2(0UL, 0x4000000000000000UL);
+  objs->odd_frac1 = fixedpoint_create2(0UL, 0x4000000000000001UL);
+  objs->odd_frac2 = fixedpoint_create2(0UL, 0x5738200583192347UL);
   objs->large1 = fixedpoint_create2(0x4b19efceaUL, 0xec9a1e2418UL);
   objs->large2 = fixedpoint_create2(0xfcbf3d5UL, 0x4d1a23c24fafUL);
   objs->max = fixedpoint_create2(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL);
@@ -78,6 +104,34 @@ TestObjs *setup(void) {
 
 void cleanup(TestObjs *objs) {
   free(objs);
+}
+
+void test_is_valid(TestObjs *objs) {
+  Fixedpoint min = fixedpoint_negate(objs->max);
+  Fixedpoint negative_one = fixedpoint_negate(objs->one);
+
+  ASSERT(fixedpoint_is_valid(objs->zero));
+  ASSERT(fixedpoint_is_valid(objs->odd_frac2));
+  ASSERT(fixedpoint_is_valid(objs->large1));
+  ASSERT(fixedpoint_is_valid(negative_one));
+  ASSERT(fixedpoint_is_valid(min));
+}
+
+void test_is_zero(TestObjs *objs) {
+  Fixedpoint neg_zero = fixedpoint_negate(objs->zero);
+
+  ASSERT(fixedpoint_is_valid(objs->zero));
+  ASSERT(fixedpoint_is_valid(neg_zero));
+}
+
+void test_is_neg(TestObjs *objs) {
+  Fixedpoint min = fixedpoint_negate(objs->max);
+  Fixedpoint negative_one = fixedpoint_negate(objs->one);
+  Fixedpoint neg_odd1 = fixedpoint_negate(objs->odd_frac1);
+
+  ASSERT(fixedpoint_is_valid(min));
+  ASSERT(fixedpoint_is_valid(negative_one));
+  ASSERT(fixedpoint_is_valid(neg_odd1));
 }
 
 void test_whole_part(TestObjs *objs) {
@@ -119,6 +173,14 @@ void test_format_as_hex(TestObjs *objs) {
 
   s = fixedpoint_format_as_hex(objs->one);
   ASSERT(0 == strcmp(s, "1"));
+  free(s);
+
+  s = fixedpoint_format_as_hex(objs->ten);
+  ASSERT(0 == strcmp(s, "a"));
+  free(s);
+
+  s = fixedpoint_format_as_hex(objs->thousand);
+  ASSERT(0 == strcmp(s, "3e8"));
   free(s);
 
   s = fixedpoint_format_as_hex(objs->one_half);
@@ -206,6 +268,20 @@ void test_sub(TestObjs *objs) {
   ASSERT(0x0905000000000000UL == fixedpoint_frac_part(diff));
 }
 
+void test_compare(TestObjs *objs) {
+  Fixedpoint min = fixedpoint_negate(objs->max);
+  Fixedpoint neg_one = fixedpoint_negate(objs->one);
+  Fixedpoint neg_large2 = fixedpoint_negate(objs->large2);
+
+  ASSERT(1 == fixedpoint_compare(objs->max, objs->one));
+  ASSERT(0 == fixedpoint_compare(objs->one, objs->one));
+  ASSERT(-1 == fixedpoint_compare(objs->one, objs->max));
+
+  ASSERT(1 == fixedpoint_compare(objs->max, min));
+  ASSERT(0 == fixedpoint_compare(neg_large2, neg_large2));
+  ASSERT(-1 == fixedpoint_compare(min, neg_one));
+}
+
 void test_is_overflow_pos(TestObjs *objs) {
   Fixedpoint sum;
 
@@ -219,6 +295,52 @@ void test_is_overflow_pos(TestObjs *objs) {
 
   sum = fixedpoint_sub(objs->max, negative_one);
   ASSERT(fixedpoint_is_overflow_pos(sum));
+}
+
+void test_is_overflow_neg(TestObjs *objs) {
+  Fixedpoint dif;
+
+  Fixedpoint negative_one = fixedpoint_negate(objs->one);
+  Fixedpoint min = fixedpoint_negate(objs->max);
+
+  dif = fixedpoint_add(negative_one, min);
+  ASSERT(fixedpoint_is_overflow_neg(dif));
+
+  dif = fixedpoint_sub(min, objs->one);
+  ASSERT(fixedpoint_is_overflow_neg(dif));
+
+  dif = fixedpoint_sub(min, objs->max);
+  ASSERT(fixedpoint_is_overflow_neg(dif));
+}
+
+void test_is_underflow_pos(TestObjs *objs) {
+  Fixedpoint half;
+
+  half = fixedpoint_halve(objs->odd_frac1);
+  ASSERT(fixedpoint_is_underflow_pos(half));
+
+  half = fixedpoint_halve(objs->odd_frac2);
+  ASSERT(fixedpoint_is_underflow_pos(half));
+  
+  half = fixedpoint_halve(objs->max);
+  ASSERT(fixedpoint_is_underflow_pos(half));
+}
+
+void test_is_underflow_neg(TestObjs *objs) {
+  Fixedpoint half;
+
+  Fixedpoint neg_odd1 = fixedpoint_negate(objs->odd_frac1);
+  Fixedpoint neg_odd2 = fixedpoint_negate(objs->odd_frac2);
+  Fixedpoint min = fixedpoint_negate(objs->max);
+
+  half = fixedpoint_halve(neg_odd1);
+  ASSERT(fixedpoint_is_underflow_neg(half));
+
+  half = fixedpoint_halve(neg_odd2);
+  ASSERT(fixedpoint_is_underflow_neg(half));
+  
+  half = fixedpoint_halve(min);
+  ASSERT(fixedpoint_is_underflow_neg(half));
 }
 
 void test_is_err(TestObjs *objs) {
