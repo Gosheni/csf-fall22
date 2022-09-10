@@ -66,6 +66,7 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   }
   if(error) fp.tag = Error;
   fp.whole = whole;
+  frac <<= 4 * (16-count);
   fp.frac = frac;
   return fp; 
 }
