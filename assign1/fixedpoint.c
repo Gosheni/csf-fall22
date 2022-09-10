@@ -183,7 +183,7 @@ int fixedpoint_compare(Fixedpoint left, Fixedpoint right) {
     return -1;
   } else if (!fixedpoint_is_neg(left) && fixedpoint_is_neg(right)) {
     return 1;
-  } else {
+  } else if (!fixedpoint_is_neg(left) && !fixedpoint_is_neg(right)) {
     if (right.whole > left.whole) {
       return -1;
     } else if (right.whole < left.whole) {
@@ -193,6 +193,20 @@ int fixedpoint_compare(Fixedpoint left, Fixedpoint right) {
         return -1;
       } else if (right.frac < left.frac) {
         return 1;
+      } else {
+        return 0;
+      }
+    }
+  } else {
+    if (right.whole > left.whole) {
+      return 1;
+    } else if (right.whole < left.whole) {
+      return -1;
+    } else {
+      if (right.frac > left.frac) {
+        return 1;
+      } else if (right.frac < left.frac) {
+        return -1;
       } else {
         return 0;
       }
@@ -280,13 +294,11 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
     strcat(w, integer_string);
     whole /= 16;
   }
-  printf("%s\n", w);
   for (size_t i = 0; i <= strlen(w)/2; i++) {
     char temp = w[i];
     w[i] = w[strlen(w) - i - 1];
     w[strlen(w) - i - 1] = temp;
   }
-  printf("%s\n", w);
   strcpy(s, "<invalid>");
   return w;
 }
