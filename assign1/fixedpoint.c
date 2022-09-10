@@ -259,9 +259,34 @@ int fixedpoint_is_valid(Fixedpoint val) {
 }
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
-  // TODO: implement
   assert(fixedpoint_is_valid(val));
   char *s = malloc(20);
+  if (val.frac == 0 && val.whole == 0) {
+    strcpy(s, "0");
+    return s;
+  }
+  char *w = malloc(10);
+  int count = 0;
+  uint64_t whole = val.whole;
+  while (whole != 0) {
+    uint8_t c = whole % 16;
+    char integer_string[2];
+    if (c >= 10 && c <= 15) {
+      c = (c - 10) + 'a'; 
+      sprintf(integer_string, "%c", c);
+    } else {
+      sprintf(integer_string, "%d", c);
+    }
+    strcat(w, integer_string);
+    whole /= 16;
+  }
+  printf("%s\n", w);
+  for (size_t i = 0; i <= strlen(w)/2; i++) {
+    char temp = w[i];
+    w[i] = w[strlen(w) - i - 1];
+    w[strlen(w) - i - 1] = temp;
+  }
+  printf("%s\n", w);
   strcpy(s, "<invalid>");
-  return s;
+  return w;
 }
