@@ -41,7 +41,12 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
     if (n >= 16) fp.tag = Error;
     w[n++] = c; 
   }
-  w[n] = '\0';
+  if(n == 0){
+    w[n] = '0';
+    w[n+1] = '\0';
+  }else{
+    w[n] = '\0';
+  }
   n = 0;
   while (*hex) {
     uint64_t c = *hex++;
