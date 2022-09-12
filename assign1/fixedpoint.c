@@ -37,9 +37,7 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   int n = 0;
   while (*hex) {
     uint64_t c = *hex++;
-    if (c == '.') {
-      break;
-    }
+    if (c == '.') break;
     if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) fp.tag = Error;
     if (n >= 16) fp.tag = Error;
     w[n++] = c; 
@@ -56,10 +54,8 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
     f[n++] = '0';
   }
   f[n] = '\0';
-  char* ptr;
-  char* ptr2;
-  fp.whole = strtoul(w, &ptr, 16);
-  fp.frac = strtoul(f, &ptr2, 16);
+  fp.whole = strtoul(w, NULL, 16);
+  fp.frac = strtoul(f, NULL, 16);
   free(w);
   free(f);
   return fp; 
@@ -285,8 +281,8 @@ int fixedpoint_is_valid(Fixedpoint val) {
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
   printf("-------");
-  char *s = malloc(20);
-  char *w = malloc(20);
+  char *s = malloc(35);
+  char *w = malloc(35);
   if (val.whole == 0) {
     strcpy(w, "0");
   } else {
@@ -316,8 +312,7 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
   if(val.frac == 0){
     return w;
   }else{
-    strcat(w, ".");
-    char *f = malloc(100);
+    char *f = malloc(35);
     uint64_t frac = val.frac;
     //printf("%" PRIu64 "\n", frac);
     int add_value = 0;
@@ -355,6 +350,9 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
     f[strlen(f)] = '\0';
     printf("%s\n", f);
     //printf("%s\n", strcat(w, f));
-    return strcat(w, f);
+    sprintf(s, "%s.%s", w, f);
+    free(w);
+    
+    return s;
   }
 }
