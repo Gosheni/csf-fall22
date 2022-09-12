@@ -118,7 +118,10 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
   } else {
     uint64_t sum_frac = left.frac + right.frac;
     uint64_t sum = left.whole + right.whole;
-    if(sum_frac < left.frac || sum_frac < right.frac){
+
+    Fixedpoint max = fixedpoint_create2(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL);
+
+    if (sum_frac < left.frac || sum_frac < right.frac){
       fp.frac = sum_frac;
       sum++;
     }
@@ -130,6 +133,16 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       else fp.tag = Valid_Non_Negative;
     }
     fp.whole = sum;
+    if (fixedpoint_is_neg(left)) {
+      Fixedpoint min = fixedpoint_negate(max);
+      if (fixedpoint_compare(min, left) == 0 && fixedpoint_compare(min, right) == 0) {
+        fp.tag = Overflow_Negative;
+      }
+    } else {
+      if (fixedpoint_compare(max, left) == 0 && fixedpoint_compare(max, right) == 0) {
+        fp.tag = Overflow_Positive;
+      }
+    }
   }
   return fp;
 }
@@ -275,12 +288,11 @@ int fixedpoint_is_valid(Fixedpoint val) {
 char *fixedpoint_format_as_hex(Fixedpoint val) {
   assert(fixedpoint_is_valid(val));
   char *s = malloc(20);
-  if (val.frac == 0 && val.whole == 0) {
+  if (val.whole == 0 && val.whole == 0) {
     strcpy(s, "0");
     return s;
   }
   char *w = malloc(10);
-  int count = 0;
   uint64_t whole = val.whole;
   while (whole != 0) {
     uint8_t c = whole % 16;
