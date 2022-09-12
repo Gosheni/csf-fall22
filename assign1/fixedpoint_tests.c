@@ -180,7 +180,7 @@ void test_create_from_hex(TestObjs *objs) {
   ASSERT(fixedpoint_is_valid(val1));
 
   ASSERT(0xf6a5865UL == fixedpoint_whole_part(val1));
-  printf("%ld", fixedpoint_frac_part(val1));
+
   ASSERT(0x00f2000000000000UL == fixedpoint_frac_part(val1));
 }
 
@@ -299,12 +299,10 @@ void test_halve(TestObjs *objs) {
   half2 = fixedpoint_halve(rhs);
   ASSERT(fixedpoint_is_neg(half1));
   ASSERT(0x6392950c9d703UL == fixedpoint_whole_part(half1));
-  printf("%ld\n", fixedpoint_frac_part(half1));
-  printf("%ld", fixedpoint_frac_part(half2));
-  ASSERT(0x3d28ef4f5029c62UL == fixedpoint_frac_part(half1));
+  ASSERT(0x3d28ef4f5029c620UL == fixedpoint_frac_part(half1));
   ASSERT(!fixedpoint_is_neg(half2));
   ASSERT(0x68483cUL == fixedpoint_whole_part(half2));
-  ASSERT(0x8000000000f36b02UL == fixedpoint_frac_part(half2));
+  ASSERT(0x8f36b02000000000UL == fixedpoint_frac_part(half2));
 }
 
 void test_double(TestObjs *objs) {
@@ -318,10 +316,10 @@ void test_double(TestObjs *objs) {
   doub2 = fixedpoint_double(rhs);
   ASSERT(fixedpoint_is_neg(doub1));
   ASSERT(0x18e4a543275c0fUL == fixedpoint_whole_part(doub1));
-  ASSERT(0x4a3bd3d40a718aUL == fixedpoint_frac_part(doub1));
+  ASSERT(0x4a3bd3d40a718a00UL == fixedpoint_frac_part(doub1));
   ASSERT(!fixedpoint_is_neg(doub2));
   ASSERT(0x1a120f2UL == fixedpoint_whole_part(doub2));
-  ASSERT(0x3cdac02UL == fixedpoint_frac_part(doub2));
+  ASSERT(0x3cdac02000000000UL == fixedpoint_frac_part(doub2));
 }
 
 void test_compare(TestObjs *objs) {

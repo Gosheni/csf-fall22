@@ -5,8 +5,7 @@
 #include <assert.h>
 #include "fixedpoint.h"
 
-// You can remove this once all of the functions are fully implemented
-static Fixedpoint DUMMY;
+const uint64_t MAX = 0xFFFFFFFFFFFFFFFFUL;
 
 Fixedpoint fixedpoint_create(uint64_t whole) {
   Fixedpoint fp;
@@ -74,13 +73,11 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
   assert(fixedpoint_is_valid(right));
   Fixedpoint fp;
 
-  Fixedpoint half = fixedpoint_create(0x800000000000000UL);
-  
   if (fixedpoint_is_neg(left) ^ fixedpoint_is_neg(right)) {
     if (right.whole > left.whole) {
       fp.whole = right.whole - left.whole;
       if (left.frac > right.frac) {
-        fp.frac = left.frac + right.frac + half.whole;
+        fp.frac = fp.frac = 0x8000000000000000 + right.frac + left.frac;
         fp.whole--;
       } else {
         fp.frac = right.frac - left.frac;
@@ -89,7 +86,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     } else if (left.whole > right.whole) {
       fp.whole = left.whole - right.whole;
       if (left.frac < right.frac) {
-        fp.frac = right.frac + left.frac + half.whole;
+        fp.frac = 0x8000000000000000 + right.frac + left.frac;
         fp.whole--;
       } else {
         fp.frac = left.frac - right.frac;
@@ -109,23 +106,20 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       }
     }
   } else {
-    uint64_t sum_frac = left.frac + right.frac;
-    uint64_t sum = left.whole + right.whole;
-
     Fixedpoint max = fixedpoint_create2(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL);
 
-    if (sum_frac < left.frac || sum_frac < right.frac){
-      fp.frac = sum_frac;
-      sum++;
-    }
-    if (sum < left.whole || sum < right.whole) {
+    fp.frac = left.frac + right.frac;
+    fp.whole = left.whole + right.whole;
+    if (fp.frac < left.frac || fp.frac < right.frac){
+      fp.whole++;
+    } 
+    if (fp.whole < left.whole || fp.whole < right.whole) {
       if (fixedpoint_is_neg(left)) fp.tag = Overflow_Negative;
       else fp.tag = Overflow_Positive;
     } else {
       if (fixedpoint_is_neg(left)) fp.tag = Valid_Negative;
       else fp.tag = Valid_Non_Negative;
     }
-    fp.whole = sum;
 
     //If both left and right are min or max
     if (fixedpoint_is_neg(left)) {
@@ -173,9 +167,6 @@ Fixedpoint fixedpoint_halve(Fixedpoint val) {
   } else {
     val.frac = val.frac >> 1;
     val.whole = val.whole >> 1;
-  }
-  while (val.frac % 16 == 0) {
-    val.frac /= 16;
   }
   return val;
 }
@@ -352,7 +343,6 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
     //printf("%s\n", strcat(w, f));
     sprintf(s, "%s.%s", w, f);
     free(w);
-    
     return s;
   }
 }
