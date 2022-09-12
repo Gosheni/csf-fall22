@@ -77,7 +77,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     if (right.whole > left.whole) {
       fp.whole = right.whole - left.whole;
       if (left.frac > right.frac) {
-        fp.frac = 0x8000000000000000UL + right.frac + left.frac;
+        fp.frac = MAX - left.frac + right.frac + 1;
         fp.whole--;
       } else {
         fp.frac = right.frac - left.frac;
@@ -86,7 +86,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     } else if (left.whole > right.whole) {
       fp.whole = left.whole - right.whole;
       if (left.frac < right.frac) {
-        fp.frac = 0x8000000000000000UL + right.frac + left.frac;
+        fp.frac = MAX - right.frac + left.frac + 1;
         fp.whole--;
       } else {
         fp.frac = left.frac - right.frac;
