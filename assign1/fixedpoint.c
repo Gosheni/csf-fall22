@@ -284,31 +284,76 @@ int fixedpoint_is_valid(Fixedpoint val) {
 }
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
-  assert(fixedpoint_is_valid(val));
+  printf("-------");
   char *s = malloc(20);
-  if (val.whole == 0 && val.whole == 0) {
-    strcpy(s, "0");
-    return s;
-  }
   char *w = malloc(10);
-  uint64_t whole = val.whole;
-  while (whole != 0) {
-    uint8_t c = whole % 16;
-    char integer_string[2];
-    if (c >= 10 && c <= 15) {
-      c = (c - 10) + 'a'; 
-      sprintf(integer_string, "%c", c);
-    } else {
-      sprintf(integer_string, "%d", c);
+  if(val.whole == 0){
+    strcpy(w, "0");
+  }else{
+    //whole
+    uint64_t whole = val.whole;
+    int i = 0;
+    while (whole != 0) {
+      uint8_t c = whole % 16;
+      char integer_string[2];
+      if (c >= 10 && c <= 15) {
+        c = (c - 10) + 'a'; 
+      } else {
+        c = '0' + c;
+      }
+      *(w+i) = c;
+      i++;
+      whole /= 16;
     }
-    strcat(w, integer_string);
-    whole /= 16;
+    for (size_t i = 0; i < strlen(w)/2; i++) {
+      char temp = w[i];
+      w[i] = w[strlen(w) - i - 1];
+      w[strlen(w) - i - 1] = temp;
+    }
   }
-  for (size_t i = 0; i <= strlen(w)/2; i++) {
-    char temp = w[i];
-    w[i] = w[strlen(w) - i - 1];
-    w[strlen(w) - i - 1] = temp;
+  printf("\n%s\n", w);
+  //fraction
+  if(val.frac == 0){
+    return w;
+  }else{
+    strcat(w, ".");
+    char *f = malloc(1000);
+    uint64_t frac = val.frac;
+    //printf("%" PRIu64 "\n", frac);
+    int add_value = 0;
+    int extra_zeros = 0;
+    int i = 0;
+    while (frac != 0) {
+      uint8_t c = frac % 16;
+      if (c >= 10 && c <= 15) {
+        add_value++;
+        c = (c - 10) + 'a';
+      } else if(c != 0 || add_value){
+        add_value++;
+        c = '0' + c;
+      } else {
+        extra_zeros++;
+      }
+      if(add_value){
+        //printf("==%c\n",c);
+        *(f+i) = c;
+        i++;
+      }
+      frac /= 16;
+    }
+    printf("valid_values: %d\n",add_value);
+    printf("extra_zeros: %d\n",extra_zeros);
+    for(int j = 0; j < (16-add_value-extra_zeros); j++){
+      *(f+i+j) = '0';
+    }
+    printf("%s\n", f);
+    for (size_t i = 0; i < strlen(f)/2; i++) {
+      char temp = f[i];
+      f[i] = f[strlen(f) - i - 1];
+      f[strlen(f) - i - 1] = temp;
+    }
+    printf("%s\n", f);
+    //printf("%s\n", strcat(w, f));
+    return strcat(w, f);
   }
-  strcpy(s, "<invalid>");
-  return w;
 }
