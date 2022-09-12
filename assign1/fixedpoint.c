@@ -272,16 +272,29 @@ int fixedpoint_is_valid(Fixedpoint val) {
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
   char *s = malloc(35);
-  if(val.frac == 0UL){
-    sprintf(s, "%lx", val.whole);
-  }else{
-    sprintf(s, "%lx.%016lx", val.whole, val.frac);
-    int i = strlen(s)-1;
-    while(i >= 0 && s[i] == '0'){
-      i--;
+  if(val.tag == Valid_Negative){
+    if(val.frac == 0UL){
+      sprintf(s, "-%lx", val.whole);
+    }else{
+      sprintf(s, "-%lx.%016lx", val.whole, val.frac);
+      int i = strlen(s)-1;
+      while(i >= 0 && s[i] == '0'){
+        i--;
+      }
+      s[i+1] = '\0';
     }
-    s[i+1] = '\0';
+  }else{
+    if(val.frac == 0UL){
+      sprintf(s, "%lx", val.whole);
+    }else{
+      sprintf(s, "%lx.%016lx", val.whole, val.frac);
+      int i = strlen(s)-1;
+      while(i >= 0 && s[i] == '0'){
+        i--;
+      }
+      s[i+1] = '\0';
+    }
   }
-  printf("%s",s);
+  printf("%s\n",s);
   return s;
 }
