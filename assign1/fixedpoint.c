@@ -190,8 +190,6 @@ Fixedpoint fixedpoint_double(Fixedpoint val) {
 }
 
 int fixedpoint_compare(Fixedpoint left, Fixedpoint right) {
-  assert(fixedpoint_is_valid(left));
-  assert(fixedpoint_is_valid(right));
   if (fixedpoint_is_neg(left) && !fixedpoint_is_neg(right)) {
     return -1;
   } else if (!fixedpoint_is_neg(left) && fixedpoint_is_neg(right)) {
