@@ -180,7 +180,7 @@ void test_create_from_hex(TestObjs *objs) {
   ASSERT(fixedpoint_is_valid(val1));
 
   ASSERT(0xf6a5865UL == fixedpoint_whole_part(val1));
-
+  printf("%ld", fixedpoint_frac_part(val1));
   ASSERT(0x00f2000000000000UL == fixedpoint_frac_part(val1));
 }
 
@@ -299,6 +299,7 @@ void test_halve(TestObjs *objs) {
   half2 = fixedpoint_halve(rhs);
   ASSERT(fixedpoint_is_neg(half1));
   ASSERT(0x6392950c9d703UL == fixedpoint_whole_part(half1));
+  printf("%ld\n", fixedpoint_frac_part(half1));
   printf("%ld", fixedpoint_frac_part(half2));
   ASSERT(0x3d28ef4f5029c62UL == fixedpoint_frac_part(half1));
   ASSERT(!fixedpoint_is_neg(half2));

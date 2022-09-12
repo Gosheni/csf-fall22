@@ -7,7 +7,6 @@
 
 // You can remove this once all of the functions are fully implemented
 static Fixedpoint DUMMY;
-const uint64_t MAX = 0xFFFFFFFFFFFFFFFFUL;
 
 Fixedpoint fixedpoint_create(uint64_t whole) {
   Fixedpoint fp;
@@ -27,47 +26,42 @@ Fixedpoint fixedpoint_create2(uint64_t whole, uint64_t frac) {
 
 Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   Fixedpoint fp;
+  char* w = malloc(20);
+  char* f = malloc(20);
   if (hex[0] == '-') {
     fp.tag = Valid_Negative;
     hex++;
-  }else{
+  } else {
     fp.tag = Valid_Non_Negative;
   }
-
-  int error = 0;
-  uint64_t whole = 0;
-  uint64_t frac = 0;
-  int count = 0;
-  uint64_t *ip = &whole;
+  int n = 0;
   while (*hex) {
-    uint8_t c = *hex++;
-    count += 1;
-    if (c >= '0' && c <= '9') {
-      c = c - '0';
-    } else if (c >= 'a' && c <= 'f') {
-      c = (c - 'a') + 10;
-    } else if (c >= 'A' && c <= 'F') {
-      c = (c - 'A') + 10;
-    } else if (c == '.' && ip == &whole) {
-      ip = &frac;
-      count = 0;
-      continue;
-    } else {
-      error = 1;
+    uint64_t c = *hex++;
+    if (c == '.') {
       break;
     }
-
-    if (count > 16) {
-      error = 1;
-      break;
-    }
-
-    *ip = (*ip << 4) | (c);
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) fp.tag = Error;
+    if (n >= 16) fp.tag = Error;
+    w[n++] = c; 
   }
-  if(error) fp.tag = Error;
-  fp.whole = whole;
-  frac <<= 4 * (16-count);
-  fp.frac = frac;
+  w[n] = '\0';
+  n = 0;
+  while (*hex) {
+    uint64_t c = *hex++;
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) fp.tag = Error;
+    if (n >= 16) fp.tag = Error;
+    f[n++] = c;
+  }
+  while (n < 16) {
+    f[n++] = '0';
+  }
+  f[n] = '\0';
+  char* ptr;
+  char* ptr2;
+  fp.whole = strtoul(w, &ptr, 16);
+  fp.frac = strtoul(f, &ptr2, 16);
+  free(w);
+  free(f);
   return fp; 
 }
 
@@ -83,11 +77,14 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
   assert(fixedpoint_is_valid(left));
   assert(fixedpoint_is_valid(right));
   Fixedpoint fp;
+
+  Fixedpoint half = fixedpoint_create(0x800000000000000UL);
+  
   if (fixedpoint_is_neg(left) ^ fixedpoint_is_neg(right)) {
     if (right.whole > left.whole) {
       fp.whole = right.whole - left.whole;
       if (left.frac > right.frac) {
-        fp.frac = MAX - left.frac + right.frac + 1;
+        fp.frac = left.frac + right.frac + half.whole;
         fp.whole--;
       } else {
         fp.frac = right.frac - left.frac;
@@ -96,7 +93,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     } else if (left.whole > right.whole) {
       fp.whole = left.whole - right.whole;
       if (left.frac < right.frac) {
-        fp.frac = MAX - right.frac + left.frac + 1;
+        fp.frac = right.frac + left.frac + half.whole;
         fp.whole--;
       } else {
         fp.frac = left.frac - right.frac;
@@ -133,6 +130,8 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       else fp.tag = Valid_Non_Negative;
     }
     fp.whole = sum;
+
+    //If both left and right are min or max
     if (fixedpoint_is_neg(left)) {
       Fixedpoint min = fixedpoint_negate(max);
       if (fixedpoint_compare(min, left) == 0 && fixedpoint_compare(min, right) == 0) {
@@ -168,20 +167,21 @@ Fixedpoint fixedpoint_negate(Fixedpoint val) {
 }
 
 Fixedpoint fixedpoint_halve(Fixedpoint val) {
-  Fixedpoint fp;
-  if (val.frac % 2 == 1) {
-    fp.tag = fixedpoint_is_neg(val) ? Underflow_Negative : Underflow_Positive;
+  if (val.frac & 1UL) {
+    val.tag = fixedpoint_is_neg(val) ? Underflow_Negative : Underflow_Positive;
+  } 
+  if (val.whole & 1UL) {
+    val.frac >>= 1;
+    val.frac |= 0x8000000000000000UL;
+    val.whole >>= 1;
   } else {
-    fp.tag = val.tag;
+    val.frac = val.frac >> 1;
+    val.whole = val.whole >> 1;
   }
-  if (val.whole % 2 == 1) {
-    fp.frac = val.frac + (MAX - val.frac + 1) / 2;
-    fp.whole = (val.whole-1) / 2;
-  } else {
-    fp.frac = val.frac / 2;
-    fp.whole = val.whole / 2;
+  while (val.frac % 16 == 0) {
+    val.frac /= 16;
   }
-  return fp;
+  return val;
 }
 
 Fixedpoint fixedpoint_double(Fixedpoint val) {
@@ -286,10 +286,10 @@ int fixedpoint_is_valid(Fixedpoint val) {
 char *fixedpoint_format_as_hex(Fixedpoint val) {
   printf("-------");
   char *s = malloc(20);
-  char *w = malloc(10);
-  if(val.whole == 0){
+  char *w = malloc(20);
+  if (val.whole == 0) {
     strcpy(w, "0");
-  }else{
+  } else {
     //whole
     uint64_t whole = val.whole;
     int i = 0;
@@ -317,7 +317,7 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
     return w;
   }else{
     strcat(w, ".");
-    char *f = malloc(1000);
+    char *f = malloc(100);
     uint64_t frac = val.frac;
     //printf("%" PRIu64 "\n", frac);
     int add_value = 0;
@@ -352,6 +352,7 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
       f[i] = f[strlen(f) - i - 1];
       f[strlen(f) - i - 1] = temp;
     }
+    f[strlen(f)] = '\0';
     printf("%s\n", f);
     //printf("%s\n", strcat(w, f));
     return strcat(w, f);
