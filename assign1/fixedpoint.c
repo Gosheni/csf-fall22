@@ -145,15 +145,10 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       else fp.tag = Valid_Non_Negative;
     }
 
-    //If both left and right are min or max AND there is a carry, we mark them as overflow,
-    if (fixedpoint_is_neg(left) && carry) {
-      if (MAX == left.whole && MAX == right.whole) {
-        fp.tag = Overflow_Negative;
-      }
-    } else if (!fixedpoint_is_neg(left) && carry){
-      if (MAX == left.whole && MAX == right.whole) {
-        fp.tag = Overflow_Positive;
-      }
+    //If both left and right are min or max AND there is a carry, we mark them as overflow
+    if (MAX == left.whole && MAX == right.whole && carry) {
+      if (fixedpoint_is_neg(left)) fp.tag = Overflow_Negative;
+      else fp.tag = Overflow_Positive;
     }
   }
   return fp;
