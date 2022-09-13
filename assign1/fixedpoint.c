@@ -86,8 +86,8 @@ uint64_t fixedpoint_frac_part(Fixedpoint val) {
 Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
   assert(fixedpoint_is_valid(left));
   assert(fixedpoint_is_valid(right));
+  
   Fixedpoint fp;
-
   //If the signs are different
   if (fixedpoint_is_neg(left) ^ fixedpoint_is_neg(right)) {
     if (right.whole > left.whole) {
@@ -199,7 +199,9 @@ Fixedpoint fixedpoint_double(Fixedpoint val) {
 }
 
 int fixedpoint_compare(Fixedpoint left, Fixedpoint right) {
-
+  assert(fixedpoint_is_valid(left));
+  assert(fixedpoint_is_valid(right));
+  
   //Positive is bigger than negative
   if (fixedpoint_is_neg(left) && !fixedpoint_is_neg(right)) {
     return -1;
@@ -300,12 +302,17 @@ int fixedpoint_is_valid(Fixedpoint val) {
 }
 
 char *fixedpoint_format_as_hex(Fixedpoint val) {
+  assert(fixedpoint_is_valid(val));
+
+  //malloc size of 35 = 1 (sign) + 16 (whole) + 1 (.) + 16 (frac) + 1 ('/0')
   char *s = malloc(35);
   if(val.tag == Valid_Negative){
     if(val.frac == 0UL){
       sprintf(s, "-%lx", val.whole);
     }else{
       sprintf(s, "-%lx.%016lx", val.whole, val.frac);
+
+      //remove trailing zeros in fractional component
       int i = strlen(s)-1;
       while(i >= 0 && s[i] == '0'){
         i--;
@@ -317,6 +324,8 @@ char *fixedpoint_format_as_hex(Fixedpoint val) {
       sprintf(s, "%lx", val.whole);
     }else{
       sprintf(s, "%lx.%016lx", val.whole, val.frac);
+      
+      //remove trailing zeros in fractional component
       int i = strlen(s)-1;
       while(i >= 0 && s[i] == '0'){
         i--;
