@@ -43,7 +43,7 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   while (*hex) {
     uint64_t c = *hex++;
     if (c == '.') break;
-    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) fp.tag = Error;
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) fp.tag = Error;
     if (n >= 16) fp.tag = Error;
     w[n++] = c; 
   }
@@ -58,7 +58,7 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex) {
   n = 0;
   while (*hex) {
     uint64_t c = *hex++;
-    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) fp.tag = Error;
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) fp.tag = Error;
     if (n >= 16) fp.tag = Error;
     f[n++] = c;
   }
@@ -187,8 +187,8 @@ Fixedpoint fixedpoint_halve(Fixedpoint val) {
     val.frac |= 0x8000000000000000UL;
     val.whole >>= 1;
   } else {
-    val.frac = val.frac >> 1;
-    val.whole = val.whole >> 1;
+    val.frac >>= 1;
+    val.whole >>= 1;
   }
   return val;
 }
