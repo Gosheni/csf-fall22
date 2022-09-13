@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include <stdbool.h>
 #include "fixedpoint.h"
 
 const uint64_t MAX = 0xFFFFFFFFFFFFFFFFUL;
@@ -125,7 +124,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       }
     }
   } else {
-    bool carry = false;
+    int carry = 0;
 
     fp.frac = left.frac + right.frac;
     fp.whole = left.whole + right.whole;
@@ -133,7 +132,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     //Increment fp.whole if there is a carry over on the frac part
     if (fp.frac < left.frac || fp.frac < right.frac) {
       fp.whole++;
-      carry = true;
+      carry = 1;
     }
 
     //Label as overflow if the sum is less than left or right
@@ -146,7 +145,7 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
     }
 
     //If both left and right are min or max AND there is a carry, we mark them as overflow
-    if (MAX == left.whole && MAX == right.whole && carry) {
+    if (MAX == left.whole && MAX == right.whole && carry == 1) {
       if (fixedpoint_is_neg(left)) fp.tag = Overflow_Negative;
       else fp.tag = Overflow_Positive;
     }
