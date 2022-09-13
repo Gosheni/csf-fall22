@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdbool.h>
 #include "fixedpoint.h"
 
 const uint64_t MAX = 0xFFFFFFFFFFFFFFFFUL;
@@ -124,13 +125,16 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       }
     }
   } else {
-    Fixedpoint max = fixedpoint_create2(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL);
+    bool carry = false;
 
     fp.frac = left.frac + right.frac;
     fp.whole = left.whole + right.whole;
 
     //Increment fp.whole if there is a carry over on the frac part
-    if (fp.frac < left.frac || fp.frac < right.frac) fp.whole++;
+    if (fp.frac < left.frac || fp.frac < right.frac) {
+      fp.whole++;
+      carry = true;
+    }
 
     //Label as overflow if the sum is less than left or right
     if (fp.whole < left.whole || fp.whole < right.whole) {
@@ -141,15 +145,13 @@ Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right) {
       else fp.tag = Valid_Non_Negative;
     }
 
-    //If both left and right are min or max, which means there is an overflow,
-    //but we marked them as valid
-    if (fixedpoint_is_neg(left)) {
-      Fixedpoint min = fixedpoint_negate(max);
-      if (fixedpoint_compare(min, left) == 0 && fixedpoint_compare(min, right) == 0) {
+    //If both left and right are min or max AND there is a carry, we mark them as overflow,
+    if (fixedpoint_is_neg(left) && carry) {
+      if (MAX == left.whole && MAX == right.whole) {
         fp.tag = Overflow_Negative;
       }
-    } else {
-      if (fixedpoint_compare(max, left) == 0 && fixedpoint_compare(max, right) == 0) {
+    } else if (!fixedpoint_is_neg(left) && carry){
+      if (MAX == left.whole && MAX == right.whole) {
         fp.tag = Overflow_Positive;
       }
     }
@@ -171,7 +173,7 @@ Fixedpoint fixedpoint_sub(Fixedpoint left, Fixedpoint right) {
 
 Fixedpoint fixedpoint_negate(Fixedpoint val) {
   assert(fixedpoint_is_valid(val));
-  
+
   if (val.whole != 0 || val.frac != 0) {
     if (val.tag == Valid_Negative) val.tag = Valid_Non_Negative;
     else if (val.tag == Valid_Non_Negative) val.tag = Valid_Negative;
