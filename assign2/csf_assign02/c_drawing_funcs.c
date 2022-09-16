@@ -10,8 +10,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 static int32_t in_bounds(struct Image *img, int32_t x, int32_t y) {
-  if (x < 0 || y < 0) return 0;
-  if (img->width <= x || img->height <= y) return 0;
+  if (x < 0 || y < 0 || x >= img->width || y >= img->height) {
+    return 0;
+  }
   return 1;
 }
 
@@ -48,11 +49,11 @@ static uint8_t blend_components(uint32_t fg, uint32_t bg, uint32_t alpha) {
 static uint32_t blend_colors(uint32_t fg, uint32_t bg) {
   uint32_t color = blend_components(get_r(fg), get_r(bg), get_a(fg));
   color <<= 8;
-  color += blend_components(get_b(fg), get_b(bg), get_a(fg));
+  color |= blend_components(get_g(fg), get_g(bg), get_a(fg));
   color <<= 8;
-  color += blend_components(get_g(fg), get_g(bg), get_a(fg));
+  color |= blend_components(get_b(fg), get_b(bg), get_a(fg));
   color <<= 8;
-  color += get_a(fg);
+  color |= 255; //Set opacity to max
   return color;
 }
 
@@ -82,8 +83,9 @@ static int64_t square_dist(int64_t x1, int64_t y1, int64_t x2, int64_t y2) {
 //   color - uint32_t color value
 //
 void draw_pixel(struct Image *img, int32_t x, int32_t y, uint32_t color) {
-  if (!in_bounds(img, x, y)) {
-    set_pixel(img, compute_index(img, x, y), color);
+  if (in_bounds(img, x, y)) {
+    uint32_t ind = compute_index(img, x, y);
+    set_pixel(img, ind, color);
   }
 }
 
@@ -100,8 +102,8 @@ void draw_pixel(struct Image *img, int32_t x, int32_t y, uint32_t color) {
 void draw_rect(struct Image *img,
                const struct Rect *rect,
                uint32_t color) {
-  for (int32_t i = rect->y; i < img->height; i++) {
-    for (int32_t j = rect->x; j < img->width; j++) {
+  for (int32_t i = rect->y; i < rect->y + rect->height; i++) {
+    for (int32_t j = rect->x; j < rect->x + rect->width; j++) {
       draw_pixel(img, j, i, color);
     }
   }
@@ -123,7 +125,7 @@ void draw_circle(struct Image *img,
                uint32_t color) {
   for (int32_t i = y-r; i <= y+r; i++) {
     for (int32_t j = x-r; j <= x+r; j++) {
-      if (square_dist(j, i, x, y) <= r) {
+      if (square_dist(j, i, x, y) <= square(r)) {
         draw_pixel(img, j, i, color);
       }
     }

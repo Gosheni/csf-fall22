@@ -63,6 +63,18 @@ uint32_t lookup_color(char c, const ExpectedColor *colors) {
     }
   }
 }
+void check_picture2(struct Image *img, Picture *p) {
+  unsigned num_pixels = img->width * img->height;
+  assert(strlen(p->pic) == num_pixels);
+
+  for (unsigned i = 0; i < num_pixels; i++) {
+    char c = p->pic[i];
+    uint32_t expected_color = lookup_color(c, p->colors);
+    uint32_t actual_color = img->data[i];
+    printf("%u", actual_color);
+    printf("%u\n", expected_color);
+  }
+}
 
 void check_picture(struct Image *img, Picture *p) {
   unsigned num_pixels = img->width * img->height;
@@ -142,6 +154,7 @@ void test_draw_rect(TestObjs *objs) {
     "   bbb  "
   };
 
+  //check_picture2(&objs->small, &expected);
   check_picture(&objs->small, &expected);
 }
 
