@@ -20,12 +20,6 @@ static uint32_t compute_index(struct Image *img, int32_t x, int32_t y) {
   return y * (img->width) + x;
 }
 
-static int32_t clamp(int32_t val, int32_t min, int32_t max) {
-  if (val < min) val = min;
-  else if (val > max) val = max;
-  return val;
-}
-
 static uint8_t get_r(uint32_t color) {
   return color >> 24;
 }
