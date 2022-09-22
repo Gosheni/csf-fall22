@@ -23,6 +23,145 @@
 
 /* TODO: implement your helper functions here */
 
+/* Tests whether the given x and y coordinates
+ * of the destination image is within the 
+ * boundaries of the destination image.
+ *
+ * Parameters:
+ *   %rdi - pointer to Image (dest image)
+ *   %esi - x coordinate of location where tile should be copied
+ *   %edx - y coordinate of location where tile should be copied
+ */
+	.globl in_bounds
+in_bounds:
+	ret
+
+
+/* Returns the index of the destination image
+ * given its x and y coordinates
+ *
+ * Parameters:
+ *   %rdi - pointer to Image (dest image)
+ *   %esi - x coordinate of location where tile should be copied
+ *   %edx - y coordinate of location where tile should be copied
+ */
+	.globl compute_index
+compute_index:
+	ret
+
+
+/* If the given value is less than min or
+ * greater than the given max, the value
+ * is modified to fit that min and max range
+ *
+ * Parameters:
+ *   %edi - int32_t value
+ *   %esi - x coordinate of location where tile should be copied
+ *   %edx - y coordinate of location where tile should be copied
+ */
+	.globl clamp
+clamp:
+	ret
+
+
+/* Returns uint8_t value of the red pixel
+ *
+ * Parameters:
+ *   %edi - uint32_t color value
+ */
+	.globl get_r
+get_r:
+	ret
+
+
+/* Returns uint8_t value of the green pixel
+ *
+ * Parameters:
+ *   %edi - uint32_t color value
+ */
+	.globl get_g
+get_g:
+	ret
+
+
+/* Returns uint8_t value of the blue pixel
+ *
+ * Parameters:
+ *   %edi - uint32_t color value
+ */
+	.globl get_b
+get_b:
+	ret
+
+
+/* Returns uint8_t value of alpha (opacity)
+ *
+ * Parameters:
+ *   %edi - uint32_t color value
+ */
+	.globl get_a
+get_a:
+	ret
+
+
+/* Blends the foreground color with the given
+ * background color with the alpha value at 8 bit scale 
+ * 
+ * Parameters:
+ *   %edi - uint32_t color value of the foreground
+ *   %esi - uint32_t color value of the background
+ *   %edx - uint32_t alpha value of the opacity
+ */
+	.globl blend_components
+blend_components:
+	ret
+
+
+/* Blends the foreground color 
+ * with the given background color 
+ * 
+ * Parameters:
+ *   %edi - uint32_t color value of the foreground
+ *   %esi - uint32_t color value of the background
+ */
+	.globl blend_colors
+blend_colors:
+	ret
+
+
+/* Sets the pixel of the destination image
+ * at given index with the given color 
+ * 
+ * Parameters:
+ *   %rdi - pointer to struct Image
+ *   %esi - uint32_t value of index of the image
+ *   %edx - uint32_t color value
+ */
+	.globl set_pixel
+set_pixel:
+	ret
+
+
+/* Returns int64_t square value of x
+ *
+ * Parameters:
+ *   %rdi - int64_t value
+ */
+	.globl square
+square:
+	ret
+
+
+/* Returns int64_t distance between 
+ * two coordinates (x1,y1) and (x2, y2)
+ *
+ * Parameters:
+ *   %rdi - int64_t value
+ */
+	.globl square_dist
+square_dist:
+	ret
+
 /***********************************************************************
    Public API functions
  ***********************************************************************/
