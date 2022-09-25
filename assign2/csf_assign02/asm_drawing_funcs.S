@@ -34,6 +34,26 @@
  */
 	.globl in_bounds
 in_bounds:
+	movl IMAGE_WIDTH_OFFSET(%rdi), %r10d // Store pointer value of image width to r10d 
+	movl IMAGE_HEIGHT_OFFSET(%rdi), %r11d // Store pointer value of image height to r11d
+
+	cmpl $0, %esi // Compare 0 and esi
+	jl .Lnot_in_bounds // If esi is less than 0, jump to Lnot_in_bounds
+	cmpl $0, %edx // Compare 0 and edx
+	jl .Lnot_in_bounds // If edx is less than 0, jump to Lnot_in_bounds
+
+	cmpl %r10d, %esi // Compare r10d and esi
+	jge .Lnot_in_bounds // If esi is greater than or equal to r10d, jump to Lnot_in_bounds
+	cmpl %r11d, %edx // Compare r11d and esi
+	jge .Lnot_in_bounds // If edx is greater than or equal to r11d, jump to Lnot_in_bounds
+
+	movl $1, %eax // Store the value 1 into eax to return it
+	jmp .L_in_boundsend // Jump to the end
+
+.Lnot_in_bounds:
+	movl $0, %eax // Store the value 0 into eax to return it
+
+.L_in_boundsend:
 	ret
 
 
@@ -145,13 +165,12 @@ set_pixel:
 /* Returns int64_t square value of x
  *
  * Parameters:
- *   %rdi - int64_t value (x1)
- *   %rsi - int64_t value (y1)
- *   %rdx - int64_t value (x2)
- *   %rcx - int64_t value (y2)
+ *   %rdi - int64_t value
  */
 	.globl square
 square:
+	imulq %rdi, %rdi //square the value of the rdi register and store it in rdi 
+	movq %rdi, %rax //move rdi to rax register to return it
 	ret
 
 
@@ -159,10 +178,35 @@ square:
  * two coordinates (x1,y1) and (x2, y2)
  *
  * Parameters:
- *   %rdi - int64_t value
+ *   %rdi - int64_t value (x1)
+ *   %rsi - int64_t value (y1)
+ *   %rdx - int64_t value (x2)
+ *   %rcx - int64_t value (y2)
  */
 	.globl square_dist
 square_dist:
+	pushq %r12 // Push r12 register onto stack to store y1 value
+	pushq %r13 // Push r13 register onto stack to store y2 value
+	subq $8, %rsp // Subtract 8 positions, so that rsp is at an address that's multiple of 16 to call functions
+
+	movq %rsi, %r12 // Move rsi register value to r12 register
+	movq %rcx, %r13 // Move rcx register value to r13 register
+
+	subq %rdi, %rdx // Subtract rdi from rdx and store the value in rdx
+	movq %rdx, %rdi // Move rdx to rdi register, the first arg, to call the function on it
+	call square // Call square function
+
+	subq %r12, %r13 // Subtract r12 from r13 and store it in r13
+	movq %rax, %r12 // Store the square value it r12
+	movq %r13, %rdi // Pass the difference of r12, r13 to rdi to call the function
+	call square // Call square function
+
+	addq %r12, %rax // Add the two squares and store it in rax to return it
+	
+	addq $8, %rsp // Decrement rsp register by 8 to restore the value
+	popq %r13; // Restore this callee-saved register
+	popq %r12; // Restore
+
 	ret
 
 /***********************************************************************
