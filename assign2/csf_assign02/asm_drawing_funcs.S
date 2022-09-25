@@ -145,7 +145,10 @@ set_pixel:
 /* Returns int64_t square value of x
  *
  * Parameters:
- *   %rdi - int64_t value
+ *   %rdi - int64_t value (x1)
+ *   %rsi - int64_t value (y1)
+ *   %rdx - int64_t value (x2)
+ *   %rcx - int64_t value (y2)
  */
 	.globl square
 square:

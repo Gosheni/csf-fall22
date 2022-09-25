@@ -5,7 +5,8 @@
 #include "image.h"
 #include "drawing_funcs.h"
 #include "tctest.h"
-// TODO: add prototypes for your helper functions
+
+#include <inttypes.h>
 
 // an expected color identified by a (non-zero) character code
 typedef struct {
@@ -51,7 +52,6 @@ void cleanup(TestObjs *objs) {
   free(objs->large.data);
   free(objs->tilemap.data);
   free(objs->spritemap.data);
-
   free(objs);
 }
 
@@ -89,6 +89,15 @@ void check_picture(struct Image *img, Picture *p) {
 }
 
 // prototypes of test functions
+void test_in_bounds(TestObjs *objs);
+void test_compute_index(TestObjs *objs);
+void test_clamp(TestObjs *objs);
+void test_get_r_g_b_a(TestObjs *objs);
+void test_blend_components(TestObjs *objs);
+void test_blend_colors(TestObjs *objs);
+void test_set_pixel(TestObjs *objs);
+void test_square(TestObjs *objs);
+void test_square_dist(TestObjs *objs);
 void test_draw_pixel(TestObjs *objs);
 void test_draw_rect(TestObjs *objs);
 void test_draw_circle(TestObjs *objs);
@@ -104,7 +113,18 @@ int main(int argc, char **argv) {
 
   TEST_INIT();
 
-  // TODO: add TEST() directives for your helper functions
+  // test helper functions
+  TEST(test_in_bounds);
+  TEST(test_compute_index);
+  TEST(test_clamp);
+  TEST(test_get_r_g_b_a);
+  TEST(test_blend_components);
+  TEST(test_blend_colors);
+  TEST(test_set_pixel);
+  TEST(test_square);
+  TEST(test_square_dist);
+
+  //test draw
   TEST(test_draw_pixel);
   TEST(test_draw_rect);
   TEST(test_draw_circle);
@@ -115,6 +135,95 @@ int main(int argc, char **argv) {
   TEST_FINI();
 }
 
+//test helper functions
+void test_in_bounds(TestObjs *objs){
+  ASSERT(in_bounds(&objs->small, 0, 0));
+  ASSERT(in_bounds(&objs->small, 4, 3));
+  ASSERT(in_bounds(&objs->small, SMALL_W-1, SMALL_H-1));
+  ASSERT(in_bounds(&objs->large, 0, 0));
+  ASSERT(in_bounds(&objs->large, 4, 3));
+  ASSERT(in_bounds(&objs->large, LARGE_W-1, LARGE_H-1));
+
+  ASSERT(!in_bounds(&objs->small, -1, -1));
+  ASSERT(!in_bounds(&objs->small, SMALL_W, SMALL_H));
+  ASSERT(!in_bounds(&objs->large, -1, -1));
+  ASSERT(!in_bounds(&objs->large, LARGE_W, LARGE_H));
+}
+void test_compute_index(TestObjs *objs){
+  ASSERT(SMALL_IDX(0,0) == compute_index(&objs->small, 0, 0));
+  ASSERT(SMALL_IDX(4,3) == compute_index(&objs->small, 4, 3));
+  ASSERT(SMALL_IDX(SMALL_W-1,SMALL_H-1) == compute_index(&objs->small, SMALL_W-1, SMALL_H-1));
+}
+void test_clamp(TestObjs *obs){
+  ASSERT(clamp(-5,0,SMALL_W) == 0);
+  ASSERT(clamp(0,0,SMALL_W) == 0);
+  ASSERT(clamp(SMALL_W+1,0,SMALL_W) == SMALL_W);
+}
+void test_get_r_g_b_a(TestObjs *objs){
+  uint32_t no_color = 0;
+  ASSERT(get_r(no_color) == 0);
+  ASSERT(get_g(no_color) == 0);
+  ASSERT(get_b(no_color) == 0);
+  ASSERT(get_a(no_color) == 0);
+  uint32_t opaque_red = 0xFF0000FFU;
+  ASSERT(get_r(opaque_red) == 0xFFU);
+  ASSERT(get_g(opaque_red) == 0);
+  ASSERT(get_b(opaque_red) == 0);
+  ASSERT(get_a(opaque_red) == 0xFFU);
+  uint32_t half_opaque_cyan = 0x00FFFF80U;
+  ASSERT(get_r(half_opaque_cyan) == 0);
+  ASSERT(get_g(half_opaque_cyan) == 0xFFU);
+  ASSERT(get_b(half_opaque_cyan) == 0xFFU);
+  ASSERT(get_a(half_opaque_cyan) == 0x80U);
+  uint32_t opaque_white = 0xFFFFFFFFU;
+  ASSERT(get_r(opaque_white) == 0xFFU);
+  ASSERT(get_g(opaque_white) == 0xFFU);
+  ASSERT(get_b(opaque_white) == 0xFFU);
+  ASSERT(get_a(opaque_white) == 0xFFU);
+}
+void test_blend_components(TestObjs *objs){
+  ASSERT(blend_components(0,0,0) == 0);
+  ASSERT(blend_components(0xFFU,0x8AU,0) == 0x8AU);
+  ASSERT(blend_components(0,0,0xFFU) == 0);
+  ASSERT(blend_components(0x8AU,0xFFU,0xFFU) == 0x8AU);
+  ASSERT(blend_components(0xFFU,0xFFU,0x80U) == 0xFFU);
+  ASSERT(blend_components(0,0xFFU,0x80U) == 0x7FU);
+  ASSERT(blend_components(0x3AU,0xF3U,0xB7U) == 0x6EU);
+}
+void test_blend_colors(TestObjs *objs){
+  ASSERT(blend_colors(0,0) == 0xFFU);
+  ASSERT(blend_colors(0,0xFFFFFFFFU) == 0xFFFFFFFFU);
+  ASSERT(blend_colors(0xFFFFFFFFU,0) == 0xFFFFFFFFU);
+  ASSERT(blend_colors(0x00CB00D3U,0x715300FFU) == 0x13B600FFU);
+  printf("%d", blend_colors(0xFFFFFF00U,0x873B68ABU));
+  ASSERT(blend_colors(0xFFFFFF00U,0x873B68ABU) == 0x873B68FFU);
+}
+void test_set_pixel(TestObjs *objs){
+  set_pixel(&objs->small, 0, 0);
+  ASSERT(objs->small.data[0] == 0xFFU);
+  set_pixel(&objs->small, SMALL_IDX(3, 2), 0x13008AFFU);
+  ASSERT(objs->small.data[SMALL_IDX(3, 2)] == 0x13008AFFU);
+  set_pixel(&objs->small, SMALL_IDX(3, 2), 0xFFB7FFFFU);
+  ASSERT(objs->small.data[SMALL_IDX(3, 2)] == 0xFFB7FFFFU);
+  set_pixel(&objs->small, SMALL_IDX(3, 2), 0xFFB76300U);
+  ASSERT(objs->small.data[SMALL_IDX(3, 2)] == 0xFFB7FFFFU);
+  set_pixel(&objs->small, SMALL_IDX(3, 2), 0xFFA96380U);
+  ASSERT(objs->small.data[SMALL_IDX(3, 2)] == 0xFFAFB0FFU);
+}
+void test_square(TestObjs *objs){
+  ASSERT(square(0) == 0);
+  ASSERT(square(1) == 1);
+  ASSERT(square(-1) == 1);
+  ASSERT(square(16) == 256);
+}
+void test_square_dist(TestObjs *objs){
+  ASSERT(square_dist(0,0,0,0) == 0);
+  ASSERT(square_dist(0,0,1,1) == 2);
+  ASSERT(square_dist(-1,-1,1,1) == 8);
+  ASSERT(square_dist(0,0,3,4) == 25);
+}
+
+//default tests
 void test_draw_pixel(TestObjs *objs) {
   // initially objs->small pixels are opaque black
   ASSERT(objs->small.data[SMALL_IDX(3, 2)] == 0x000000FFU);
