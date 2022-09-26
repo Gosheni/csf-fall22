@@ -114,9 +114,9 @@ clamp:
  */
 	.globl get_r
 get_r:
-	shrl $24, %edi
-	movl %edi, %eax
-	andl $0xFF, %eax
+	shrl $24, %edi // Shift the edi value by 24 bits to the right
+	movl %edi, %eax // Store the edi value to the return register eax
+	andl $0xFF, %eax // Return the 8 bit value of eax
 	ret
 
 
@@ -127,9 +127,9 @@ get_r:
  */
 	.globl get_g
 get_g:
-	shrl $16, %edi
-	movl %edi, %eax
-	andl $0xFF, %eax
+	shrl $16, %edi // Shift the edi value by 16 bits to the right
+	movl %edi, %eax // Store the edi value to the return register eax
+	andl $0xFF, %eax // Return the 8 bit value of eax
 	ret
 
 
@@ -140,9 +140,9 @@ get_g:
  */
 	.globl get_b
 get_b:
-	shrl $8, %edi
-	movl %edi, %eax
-	andl $0xFF, %eax
+	shrl $8, %edi // Shift the edi value by 8 bits to the right
+	movl %edi, %eax // Store the edi value to the return register eax
+	andl $0xFF, %eax // Return the 8 bit value of eax
 	ret
 
 
@@ -153,8 +153,8 @@ get_b:
  */
 	.globl get_a
 get_a:
-	movl %edi, %eax
-	andl $0xFF, %eax
+	movl %edi, %eax // Store the edi value to the return register eax
+	andl $0xFF, %eax // Return the 8 bit value of eax
 	ret
 
 
@@ -168,15 +168,17 @@ get_a:
  */
 	.globl blend_components
 blend_components:
-    movl $255, %r10d
-	subl %edx, %r10d
-	imull %esi, %r10d
-	imull %edx, %edi
-	addl %edi, %r10d
-	movl %r10d, %eax
-	movl $0, %edx
-	movl $255, %r10d
-	div %r10d
+    movl $255, %r10d // Store the 255 value in r10d register
+
+	subl %edx, %r10d // Subtract alpha value from 255 and store the val in r10d
+	imull %esi, %r10d // Multiply bg color val with r10d and store it in r10d
+	imull %edx, %edi // Multiply alpha and fg color value and store it in edi register
+	addl %edi, %r10d // Add the edi value and r10d value together and store it in r10d
+
+	movl %r10d, %eax // Store the result r10d to the return register eax
+	movl $0, %edx // Set edx register to 0 to get ready divide
+	movl $255, %r10d // Store the 255 value in r10d again
+	div %r10d // Divide eax register by r10d
 
 	ret
 
@@ -190,70 +192,70 @@ blend_components:
  */
 	.globl blend_colors
 blend_colors:
-	pushq %rbx
- 	pushq %r12
-	pushq %r13
-	pushq %r14
-	pushq %r15
-	movl %edi, %r12d
-	movl %esi, %r13d
+	pushq %rbx // Push the callee saved register onto stack
+ 	pushq %r12 // Push r12 register onto stack
+	pushq %r13 // Push r13 register onto stack
+	pushq %r14 // Push r14 register onto stack
+	pushq %r15 // Push r15 register onto stack
+	movl %edi, %r12d // Store the parameter register to r12d
+	movl %esi, %r13d // Store esi register to r13d
 
-	call get_a
-	movl %eax, %r14d
-	movl %r14d, %edx
+	call get_a // Call get_a function with edi and esi registers
+	movl %eax, %r14d // Store the result onto r14d
+	movl %r14d, %edx // Move r14d to edx register to be used blend_componenets is called
 
-	movl %r12d, %edi
-	call get_r
-	movl %eax, %r15d
+	movl %r12d, %edi // Store r12d to edi register
+	call get_r // Call get_r funciton with edi register
+	movl %eax, %r15d // Store the result onto r15d
 
-	movl %r13d, %edi
-	call get_r
-	movl %eax, %esi
+	movl %r13d, %edi // Move r13d value to edi register
+	call get_r // Call get_r funciton with edi register
+	movl %eax, %esi // Store the result onto esi
 
-	movl %r14d, %edx
-	movl %r15d, %edi
-	call blend_components
-	movl %eax, %ebx
+	movl %r14d, %edx // Move r14d to edx register again
+	movl %r15d, %edi // Move 15d register to edi to get ready to call blend_components
+	call blend_components // Call blend_components with edi, esi, edx registers
+	movl %eax, %ebx // Store the result onto ebx register (color)
 
-	shll $8, %ebx
+	shll $8, %ebx // Shift ebx register (color) by 8 shifts to the left
 
-	movl %r12d, %edi
-	call get_g
-	movl %eax, %r15d
+	movl %r12d, %edi // Move r12d to edi register
+	call get_g // Call get_g funciton with edi register
+	movl %eax, %r15d // Store the result in r15d register
 
-	movl %r13d, %edi
-	call get_g
-	movl %eax, %esi
+	movl %r13d, %edi // Move r13d to edi register
+	call get_g // Call get_g funciton with edi register
+	movl %eax, %esi // Store the result in esi (second argument)
 
-	movl %r14d, %edx
-	movl %r15d, %edi
-	call blend_components
+	movl %r14d, %edx // Move r14d to edx register again
+	movl %r15d, %edi // Move 15d register to edi to get ready to call blend_components
+	call blend_components // Call blend_components with edi, esi, edx registers
 
-	orl %eax, %ebx
-	shll $8, %ebx
+	orl %eax, %ebx // Add the green color result to the shifted ebx value
+	shll $8, %ebx // Shift ebx register (color) by 8 shifts to the left
 
-	movl %r12d, %edi
-	call get_b
-	movl %eax, %r15d
+	movl %r12d, %edi // Move r12d to edi register
+	call get_b // Call get_b funciton with edi register
+	movl %eax, %r15d // Store the result in r15d register
 
-	movl %r13d, %edi
-	call get_b
-	movl %eax, %esi
+	movl %r13d, %edi // Move r13d to edi register
+	call get_b // Call get_b funciton with edi register
+	movl %eax, %esi // Store the result in esi (second argument)
 
-	movl %r14d, %edx
-	movl %r15d, %edi
-	call blend_components
+	movl %r14d, %edx // Move r14d to edx register again
+	movl %r15d, %edi // Move 15d register to edi to get ready to call blend_components
+	call blend_components // Call blend_components with edi, esi, edx registers
 
-	orl %eax, %ebx
-	shll $8, %ebx
-	orl $255, %ebx
-	movl %ebx, %eax
+	orl %eax, %ebx // Add the blue color result to the shifted ebx value
+	shll $8, %ebx // Shift ebx register (color) by 8 shifts to the left
+	orl $255, %ebx // Set opacitiy to full by adding 255 to the last 8 bits
+	movl %ebx, %eax // Store the result to return register eax
 
-	popq %r15
-	popq %r14
-	popq %r13
-	popq %r12
-	popq %rbx
+	popq %r15 // Restore r15 callee saved register
+	popq %r14 // Restore r14 callee saved register
+	popq %r13 // Restore r13 callee saved register
+	popq %r12 // Restore r12 callee saved register
+	popq %rbx // Restore rbx callee saved register
 	ret
 
 
@@ -267,22 +269,22 @@ blend_colors:
  */
 	.globl set_pixel
 set_pixel:
-	pushq %rbx
-	pushq %r12
-	subq $8, %rsp
+	pushq %rbx // Push rbx register onto stack
+	pushq %r12 // Push r12 callee saved register onto stack
+	subq $8, %rsp // Subtract 8 bytes from base stack pointer register
 
-	movl %esi, %r12d
-	movq IMAGE_DATA_OFFSET(%rdi), %rbx
+	movl %esi, %r12d // Move the index value to r12d register
+	movq IMAGE_DATA_OFFSET(%rdi), %rbx // Move the image->data to rbx register
 
-	movl (%rbx, %r12, 4), %esi
-	movl %edx, %edi
-	call blend_colors
+	movl (%rbx, %r12, 4), %esi // Move the image->data[index] value to esi register (second arg)
+	movl %edx, %edi // Move the edx reigster to edi register (first arg)
+	call blend_colors // Call blend_colors function with edi, esi registers
 
-	movl %eax, (%rbx, %r12, 4)
+	movl %eax, (%rbx, %r12, 4) // Move the result to the image->data[index] 
 
-	addq $8, %rsp
-	popq %r12
-	popq %rbx
+	addq $8, %rsp // Restore the position of rsp register
+	popq %r12 // Restore the r12 register
+	popq %rbx // Restore the rbx register
 	ret
 
 
@@ -348,33 +350,33 @@ square_dist:
  */
 	.globl draw_pixel
 draw_pixel:
-	pushq %rbx
-	pushq %r12
-	pushq %r13
+	pushq %rbx // Push callee saved rbx register onto stack
+	pushq %r12 // Push r12 register onto stack
+	pushq %r13 // Push r13 register onto stack
 
-	movq %rdi, %rbx
-	movl %esi, %r12d
-	movl %edx, %r13d
+	movq %rdi, %rbx // Save the rdi value onto callee saved rbx register (so that it doesn't get modified when external func is called)
+	movl %esi, %r12d // Move esi value onto r12d register
+	movl %edx, %r13d // Move edx value onto r13d register
 
-	call in_bounds
+	call in_bounds // Call in_bounds function with rdi, esi, edx registers
 	cmpl $1, %eax
-	jl .Lpixel_end
+	jl .Lpixel_end // If eax value is less than 1 (not within bounds), then jump to the end (Don't do anything)
 
-	movq %rbx, %rdi
-	movl %r12d, %esi
-	movl %r13d, %edx
-	call compute_index
+	movq %rbx, %rdi // Move rbx back to rdi register
+	movl %r12d, %esi // Move r12d back to esi register
+	movl %r13d, %edx // Move r13d back to edx register to get ready to call function
+	call compute_index // Call compute_index function with rdi, esi, edx registers
 	
-	movl %eax, %esi
-	movl %ecx, %edx
-	movq %rbx, %rdi
-	call set_pixel
+	movl %eax, %esi // Move the result to esi register (second arg)
+	movl %ecx, %edx // Move the color value to edx register (third arg)
+	movq %rbx, %rdi // Move rbx back to rdi register (first arg) to get ready to call function
+	call set_pixel // Call set_pixel function with rdi, esi, edx registers
 
 .Lpixel_end:
-	movl %eax, %ecx
-	popq %r13
-	popq %r12
-	popq %rbx
+	movl %eax, %ecx // Take away value from eax to make it a void function (No return)
+	popq %r13 // Restore r13 register
+	popq %r12 // Restore r12 register
+	popq %rbx // Restore rbx register
 	ret
 
 
