@@ -67,6 +67,12 @@ in_bounds:
  */
 	.globl compute_index
 compute_index:
+	movl IMAGE_WIDTH_OFFSET(%rdi), %r10d // Store pointer value of image width to r10d
+
+	imull %r10d, %edx // Multiply r10d and edx and store it in edx
+	addl %edx, %esi // Add edx and esi and store it in esi
+
+	movl %esi, %eax // Move the result esi to eax to return it
 	ret
 
 
@@ -76,11 +82,28 @@ compute_index:
  *
  * Parameters:
  *   %edi - int32_t value
- *   %esi - x coordinate of location where tile should be copied
- *   %edx - y coordinate of location where tile should be copied
+ *   %esi - minimum int32_t value val shoulde be clamped to
+ *   %edx - maximum int32_t value val shoulde be clamped to
  */
 	.globl clamp
 clamp:
+	cmpl $edi, %esi // Compare edi and esi
+	jl .Lclamp_to_min // If edi is less than esi, jump to Lclamp_to_min
+
+	cmpl $edi, %edx // Compare edi and edx
+	jg .Lclamp_to_max // If edx is less than 0, jump to Lclamp_to_max
+
+	jmp .L_clampend // Jump to the end
+
+.Lclamp_to_min:
+	movl %esi, %edi // Store the value 0 into eax to return it
+	jmp .L_clampend // Jump to the end
+
+.Lclamp_to_max:
+	movl %edx, %edi // Store the value 0 into eax to return it
+
+.L_clampend:
+	movl %edi, %eax // Store result edi value to eax to return it
 	ret
 
 
