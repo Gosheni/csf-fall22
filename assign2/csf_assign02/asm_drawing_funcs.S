@@ -87,11 +87,11 @@ compute_index:
  */
 	.globl clamp
 clamp:
-	cmpl $edi, %esi // Compare edi and esi
+  	cmpl %esi, %edi // Compare edi and esi
 	jl .Lclamp_to_min // If edi is less than esi, jump to Lclamp_to_min
 
-	cmpl $edi, %edx // Compare edi and edx
-	jg .Lclamp_to_max // If edx is less than 0, jump to Lclamp_to_max
+	cmpl %edx, %edi // Compare edi and edx
+	jg .Lclamp_to_max // If edx is greater than edx, jump to Lclamp_to_max
 
 	jmp .L_clampend // Jump to the end
 
@@ -103,7 +103,7 @@ clamp:
 	movl %edx, %edi // Store the value 0 into eax to return it
 
 .L_clampend:
-	movl %edi, %eax // Store result edi value to eax to return it
+	movl %edi, %eax // Store result edi value to eax to return it  
 	ret
 
 
@@ -114,6 +114,9 @@ clamp:
  */
 	.globl get_r
 get_r:
+	shrl $24, %edi
+	movl %edi, %eax
+	andl $0xFF, %eax
 	ret
 
 
@@ -124,6 +127,9 @@ get_r:
  */
 	.globl get_g
 get_g:
+	shrl $16, %edi
+	movl %edi, %eax
+	andl $0xFF, %eax
 	ret
 
 
@@ -134,6 +140,9 @@ get_g:
  */
 	.globl get_b
 get_b:
+	shrl $8, %edi
+	movl %edi, %eax
+	andl $0xFF, %eax
 	ret
 
 
@@ -144,6 +153,8 @@ get_b:
  */
 	.globl get_a
 get_a:
+	movl %edi, %eax
+	andl $0xFF, %eax
 	ret
 
 
@@ -157,6 +168,16 @@ get_a:
  */
 	.globl blend_components
 blend_components:
+    movl $255, %r10d
+	subl %edx, %r10d
+	imull %esi, %r10d
+	imull %edx, %edi
+	addl %edi, %r10d
+	movl %r10d, %eax
+	movl $0, %edx
+	movl $255, %r10d
+	div %r10d
+
 	ret
 
 
@@ -169,6 +190,70 @@ blend_components:
  */
 	.globl blend_colors
 blend_colors:
+	pushq %rbx
+ 	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	movl %edi, %r12d
+	movl %esi, %r13d
+
+	call get_a
+	movl %eax, %r14d
+	movl %r14d, %edx
+
+	movl %r12d, %edi
+	call get_r
+	movl %eax, %r15d
+
+	movl %r13d, %edi
+	call get_r
+	movl %eax, %esi
+
+	movl %r14d, %edx
+	movl %r15d, %edi
+	call blend_components
+	movl %eax, %ebx
+
+	shll $8, %ebx
+
+	movl %r12d, %edi
+	call get_g
+	movl %eax, %r15d
+
+	movl %r13d, %edi
+	call get_g
+	movl %eax, %esi
+
+	movl %r14d, %edx
+	movl %r15d, %edi
+	call blend_components
+
+	orl %eax, %ebx
+	shll $8, %ebx
+
+	movl %r12d, %edi
+	call get_b
+	movl %eax, %r15d
+
+	movl %r13d, %edi
+	call get_b
+	movl %eax, %esi
+
+	movl %r14d, %edx
+	movl %r15d, %edi
+	call blend_components
+
+	orl %eax, %ebx
+	shll $8, %ebx
+	orl $255, %ebx
+	movl %ebx, %eax
+
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
+	popq %rbx
 	ret
 
 
@@ -182,6 +267,22 @@ blend_colors:
  */
 	.globl set_pixel
 set_pixel:
+	pushq %rbx
+	pushq %r12
+	subq $8, %rsp
+
+	movl %esi, %r12d
+	movq IMAGE_DATA_OFFSET(%rdi), %rbx
+
+	movl (%rbx, %r12, 4), %esi
+	movl %edx, %edi
+	call blend_colors
+
+	movl %eax, (%rbx, %r12, 4)
+
+	addq $8, %rsp
+	popq %r12
+	popq %rbx
 	ret
 
 
@@ -247,7 +348,33 @@ square_dist:
  */
 	.globl draw_pixel
 draw_pixel:
-	/* TODO: implement */
+	pushq %rbx
+	pushq %r12
+	pushq %r13
+
+	movq %rdi, %rbx
+	movl %esi, %r12d
+	movl %edx, %r13d
+
+	call in_bounds
+	cmpl $1, %eax
+	jl .Lpixel_end
+
+	movq %rbx, %rdi
+	movl %r12d, %esi
+	movl %r13d, %edx
+	call compute_index
+	
+	movl %eax, %esi
+	movl %ecx, %edx
+	movq %rbx, %rdi
+	call set_pixel
+
+.Lpixel_end:
+	movl %eax, %ecx
+	popq %r13
+	popq %r12
+	popq %rbx
 	ret
 
 

@@ -6,3 +6,8 @@ Jacob, Darren - We met and worked on implementing all helper functions and used 
 to implement all 5 drawing functions altogether. Jacob took care of fixing existing 
 bugs in the code while Darren worked on building unit tests for each helper function
 to ensure our code runs correctly.
+
+Milestone 2
+Jacob, Darren - We met and worked on implementing all of our required helper functions 
+in Assembly language altogether. Jacob worked on building the base for all functions 
+and Darren worked on fixing and debugging the current code to avoid any bugs or segfaults

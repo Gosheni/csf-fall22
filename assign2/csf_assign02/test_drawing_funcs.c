@@ -195,7 +195,6 @@ void test_blend_colors(TestObjs *objs){
   ASSERT(blend_colors(0,0xFFFFFFFFU) == 0xFFFFFFFFU);
   ASSERT(blend_colors(0xFFFFFFFFU,0) == 0xFFFFFFFFU);
   ASSERT(blend_colors(0x00CB00D3U,0x715300FFU) == 0x13B600FFU);
-  printf("%d", blend_colors(0xFFFFFF00U,0x873B68ABU));
   ASSERT(blend_colors(0xFFFFFF00U,0x873B68ABU) == 0x873B68FFU);
 }
 void test_set_pixel(TestObjs *objs){

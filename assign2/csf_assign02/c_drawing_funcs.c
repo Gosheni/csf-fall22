@@ -43,8 +43,8 @@ uint32_t compute_index(struct Image *img, int32_t x, int32_t y) {
 //
 // Parameters:
 //   val     - int32_t value
-//   x       - x coordinate of location where tile should be copied
-//   y       - y coordinate of location where tile should be copied
+//   min     - minimum int32_t value val shoulde be clamped to
+//   max     - maximum int32_t value val shoulde be clamped to
 //
 int32_t clamp(int32_t val, int32_t min, int32_t max) {
   if (val < min) {
