@@ -390,10 +390,73 @@ draw_pixel:
  *   %rsi     - pointer to struct Rect
  *   %edx     - uint32_t color value
  */
-	.globl draw_rect
+    .globl draw_rect
 draw_rect:
-	/* TODO: implement */
-	ret
+    /*
+    * Register use:
+    *   %rbx - pointer to struct Image
+    *   %r12d - pointer to struct Rect
+    *   %r13d - uint32_t color value
+    *   %r14d - i
+    *   %r15d - j
+    *
+    * Stack use (8 bytes):
+    *   0(%rsp) - max_i
+    *   4(%rsp) - min_j
+    */
+
+    /* Save values of callee-saved registers */
+    pushq %rbx
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+
+    /* Reserve 8 bytes of memory for local variables */
+    subq $8, %rsp
+
+    movq %rdi, %rbx                        /* Save pointer to struct Image onto callee saved rbx register */
+    movq %rsi, %r12                        /* Save pointer to struct Rect onto callee saved r12 register */
+    movl %edx, %r13d                       /* Save the color value onto callee saved r13d register */
+    
+    movl RECT_Y_OFFSET(%r12), %r10d        /* Save rect->y in caller-saved r10d register */
+    addl RECT_HEIGHT_OFFSET(%r12), %r10d   /* Add rect->height to rect->y */
+    movl %r10d, 0(%rsp)                    /* Save rect->y + rect->height in callee saved rsp at position 0 */
+    
+    movl RECT_X_OFFSET(%r12), %r10d        /* Save rect->x in caller-saved r10d register */
+    addl RECT_WIDTH_OFFSET(%r12), %r10d    /* Add rect->width to rect->x */
+    movl %r10d, 4(%rsp)                    /* Save rect->x + rect->width in callee saved rsp at position 4 */
+    
+    movl RECT_Y_OFFSET(%r12), %r14d        /* Set i as rect->y */
+.Lrect_outer_loop:
+    movl RECT_X_OFFSET(%r12), %r15d        /* Reset j as rect->x */
+    cmp 0(%rsp), %r14d
+    jge .Lrect_outer_loop_end              /* If i is greater than or equal to max_i, jump to the end */
+.Lrect_inner_loop:
+    cmp 4(%rsp), %r15d
+    jge .Lrect_inner_loop_end              /* If j is greater than or equal to max_j, jump to the end of loop*/
+    movq %rbx, %rdi                        /* Move pointer of img to rdi register */
+    movl %r15d, %esi                       /* Move j to esi register */
+    movl %r14d, %edx                       /* Move i to edx register */
+    movl %r13d, %ecx                       /* Move color to ecx register */
+    call draw_pixel                        /* Call draw_pixel with rdi, esi, edx, and ecx registers */
+    inc %r15d                              /* Increment j by 1 */
+    jmp .Lrect_inner_loop                  /* Jump to start of inner loop */
+.Lrect_inner_loop_end:
+    inc %r14d                              /* Increment i by 1 */
+    jmp .Lrect_outer_loop                  /* Jump to start of outer loop */
+.Lrect_outer_loop_end:
+
+    /* Restore value of pointer */
+    addq $8, %rsp
+
+    /* Restore values of callee-saved registers */
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+    popq %rbx
+    ret
 
 /*
  * Draw a circle.
@@ -406,10 +469,88 @@ draw_rect:
  *   %ecx     - radius of circle
  *   %r8d     - uint32_t color value
  */
-	.globl draw_circle
+    .globl draw_circle
 draw_circle:
-	/* TODO: implement */
-	ret
+    /*
+    * Register use:
+    *   %rbx - pointer to struct Image
+    *   %r12d - x
+    *   %r13d - y
+    *   %r14d - i
+    *   %r15d - j
+    *
+    * Stack use (28 bytes):
+    *   0(%rsp) - max_i
+    *   4(%rsp) - min_j
+    *   8(%rsp) - max_j
+    *   12(%rsp) - r
+    *   16(%rsp) - color
+    *   20(%rsp) - square(r)
+    */
+
+    /* Save values of callee-saved registers */
+    pushq %rbx
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+
+    /* Reserve 28 bytes of memory for local variables */
+    subq $28, %rsp
+
+    movq %rdi, %rbx                        /* Save pointer to struct Image onto callee saved rbx register */
+    movl %esi, %r12d                       /* Save x onto callee saved r12d register */
+    movl %edx, %r13d                       /* Save y onto callee saved r13d register */
+    subl %ecx, %edx
+    movl %edx, %r14d                       /* Save y-r in r14d */
+    movl %r13d, 0(%rsp)
+    addl %ecx, 0(%rsp)                     /* Save y+r in callee saved rsp at position 0 */
+    subl %ecx, %esi
+    movl %esi, 4(%rsp)                     /* Save x-r in callee saved rsp at position 4 */
+    movl %r12d, 8(%rsp)
+    addl %ecx, 8(%rsp)                     /* Save x+r in callee saved rsp at position 8 */
+    movl %ecx, 12(%rsp)                    /* Save r in callee saved rsp at position 12 */
+    movl %r8d, 16(%rsp)                    /* Save color in callee saved rsp at position 16 */
+    movl %ecx, %edi                        /* Move r in edi register */
+    call square                            /* Call square with edi register */
+    movq %rax, 20(%rsp)                    /* Save r^2 in callee saved rsp at position 20 */
+.Lcircle_outer_loop:
+    movl 4(%rsp), %r15d                    /* Reset j as min_j (x-r) */
+    cmp 0(%rsp), %r14d
+    jg .Lcircle_outer_loop_end             /* If i is greater than max_i, then jump to end */
+.Lcircle_inner_loop:
+    cmp 8(%rsp), %r15d
+    jg .Lcircle_inner_loop_end             /* If j is greater than max_j, then jump to end of loop */
+    movl %r15d, %edi                       /* Move j to edi register */
+    movl %r14d, %esi                       /* Move i to esi register */
+    movl %r12d, %edx                       /* Move x to edx register */
+    movl %r13d, %ecx                       /* Move y to ecx register */
+    call square_dist                       /* Call square_dist with edi, esi, edx, and ecx registers */
+    cmp %rax, 20(%rsp)
+    jl .Lcircle_inner_loop_continue        /* If square of r is less than square_dist (not in circle), skip this iteration*/
+    movq %rbx, %rdi                        /* Move pointer of img to rdi register */
+    movl %r15d, %esi                       /* Move j to esi register */
+    movl %r14d, %edx                       /* Move i to edx register */
+    movl 16(%rsp), %ecx                    /* Move color to ecx register */
+    call draw_pixel                        /* Call draw_pixel with rdi, esi, edx, and ecx registers */
+.Lcircle_inner_loop_continue:
+    inc %r15d                              /* Increment j by 1 */
+    jmp .Lcircle_inner_loop                /* Jump to start of inner loop */
+.Lcircle_inner_loop_end:
+    inc %r14d                              /* Increment i by 1 */
+    jmp .Lcircle_outer_loop                /* Jump to start of outer loop */
+.Lcircle_outer_loop_end:
+
+    /* Restore value of pointer */
+    addq $28, %rsp
+
+    /* Restore values of callee-saved registers */
+    popq %r15 // Restore the r15 register
+    popq %r14 // Restore the r14 register
+    popq %r13 // Restore the r13 register
+    popq %r12 // Restore the r12 register
+    popq %rbx // Restore the rbx register
+    ret
 
 /*
  * Draw a tile by copying all pixels in the region
