@@ -1,22 +1,14 @@
-CC = gcc
+CC = g++
+CONSERVATIVE_FLAGS = -std=c++11 -Wall -Wextra -pedantic
+DEBUGGING_FLAGS = -g -O0
+CFLAGS = $(CONSERVATIVE_FLAGS) $(DEBUGGING_FLAGS)
 
-# Note: we use -std=gnu11 rather than -std=c11 in order to use the
-# sigjmp_buf data type
-CFLAGS = -g -Wall -Wextra -pedantic -std=gnu11
+csim: csim.o 
+	$(CC) -o csim csim.o 
 
-%.o : %.c
-	$(CC) $(CFLAGS) -c $*.c -o $*.o
+csim.o: csim.cpp  
+	$(CC) -c csim.cpp $(CFLAGS)
 
-all : fixedpoint_tests
-
-fixedpoint_tests : fixedpoint.o fixedpoint_tests.o tctest.o
-	$(CC) -o $@ fixedpoint.o fixedpoint_tests.o tctest.o
-
-fixedpoint.o : fixedpoint.c fixedpoint.h
-
-fixedpoint_tests.o : fixedpoint_tests.c fixedpoint.h tctest.h
-
-tctest.o : tctest.c tctest.h
-
-clean :
-	rm -f fixedpoint_tests *.o
+.PHONY: clean all
+clean:
+	rm -f *.o csim
