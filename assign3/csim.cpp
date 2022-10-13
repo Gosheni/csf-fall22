@@ -25,6 +25,14 @@ bool isPowerOfTwo(int n) {
     return (ceil(log2(n)) == floor(log2(n)));
 }
 
+bool callLoad(){
+    return 0;
+}
+
+bool callStore(){
+    return 0;
+}
+
 int main(int argc, char** argv) { 
     if (argc != 7) {
         fprintf(stderr, "%s", "Error!\n");
@@ -35,7 +43,7 @@ int main(int argc, char** argv) {
     try {
         input1 = std::stoi(argv[1]);
         input2 = std::stoi(argv[2]);
-        input3 = std::stoi(argv[3]);		
+        input3 = std::stoi(argv[3]);        
     } catch(std::exception& err) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
@@ -67,23 +75,33 @@ int main(int argc, char** argv) {
     Cache cache = {sets};
     Set set = {slots};
     
-    int count = 0;
+    int count = 0, load = 0, store = 0;
+    int loadHit = 0, loadMiss = 0;
+    int storeHit = 0, storeMiss = 0;
     while (std::getline(std::cin, line) && (!line.empty())) {
         if (count >= input1 * input2) break;
 
         std::string op = line.substr(0, 1);
         std::string address = line.substr(2, 10);
-
-        Slot s = {stoi(address, 0 ,16)};
-
-        /*
+        // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
+        // uint32_t = stol(address, 0 ,16);
+        Slot s = {stoi(address, 0 ,16),true};
+        
         if (op == "l") {
-            callLoad();
+            (callLoad()) ? loadHit++ : loadMiss++;
+            load++;
         } else {
-            callStore();
+            (callStore()) ? storeHit++ : storeMiss++;
+            store++;
         }
-        */
         count++;
     }
+    std::cout << "Total loads: " << load << std::endl;
+    std::cout << "Total stores: " << store << std::endl;
+    std::cout << "Load hits: " << loadHit << std::endl;
+    std::cout << "Load misses: " << loadMiss << std::endl;
+    std::cout << "Store hits: " << storeHit << std::endl;
+    std::cout << "Store misses: " << storeMiss << std::endl;
+    std::cout << "Total cycles: " << load << std::endl;
     return 0;
 }
