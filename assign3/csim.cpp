@@ -4,20 +4,9 @@
 #include <string>
 #include <sstream>
 #include <exception>
-
-struct Slot {
-    uint32_t tag;
-    bool valid;
-    uint32_t load_ts, access_ts;
-};
-
-struct Set {
-    std::vector<Slot> slots; //Not dynamic, created up front
-};
-
-struct Cache {
-    std::vector<Set> sets;
-};
+#include "Cache.hpp"
+#include "Set.hpp"
+#include "Slot.hpp"
 
 int logTwo(int n) {
     if (n == 0) return -1;
@@ -76,7 +65,8 @@ int main(int argc, char** argv) {
         }
     }  
     int input1 = std::stoi(argv[1]), input2 = std::stoi(argv[2]), input3 = std::stoi(argv[3]);
-    if (logTwo(input1) == -1 || logTwo(input2) == -1 || logTwo(input3) == -1 || input3 < 4) {
+    int size1 = logTwo(input1), size2 = logTwo(input2), size3 = logTwo(input3);
+    if (size1 == -1 || size2 == -1 || size3 == -1 || input3 < 4) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
@@ -86,13 +76,14 @@ int main(int argc, char** argv) {
     }
 
     std::string line;
-    std::vector<Slot> slots(input2);
-    std::vector<Set> sets(input1);
+    std::vector<Csim::Slot> slots(input2);
+    std::vector<Csim::Set> sets(size1);
 
-    Cache cache = {sets};
-    Set set = {slots};
+    Csim::Cache ca = {sets};
+    Csim::Set set = {slots};
     
-    int count = 0, load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
+    int count = 0;
+    unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
 
     while (std::getline(std::cin, line) && (!line.empty())) {
         if (count >= input1 * input2) break;
@@ -101,7 +92,21 @@ int main(int argc, char** argv) {
         std::string address = line.substr(2, 10);
         // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
         // uint32_t = stol(address, 0 ,16);
-        Slot s = {stoi(address, 0 ,16), true};
+        uint32_t ad = stoi(address, 0, 16);
+
+        ad >>= size3; // Get rid of the offset
+        uint32_t index = ad % input1; // Get index
+        ad >>= size1; // Get the rest which is the tag
+        Csim::Slot s = {ad, true}; // Initialize slot
+
+        /*if (ca.sets.at(index) == NULL) {
+            std::vector<Slot> slots(input2);
+            Set st = {slots};
+            sets.at(index) = st;
+            st.slots.push_back(s);
+        } else {
+            ca.sets.at(index).slots.push_back(s);
+        }*/
         
         if (op == "l") {
             (callLoad()) ? loadHit++ : loadMiss++;
