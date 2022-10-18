@@ -12,17 +12,21 @@ struct Slot {
 };
 
 struct Set {
-    std::vector<Slot> slots; //Not dynamic (No add, remove), created up front
+    std::vector<Slot> slots; //Not dynamic, created up front
 };
 
 struct Cache {
     std::vector<Set> sets;
 };
 
-bool isPowerOfTwo(int n) {
-    if (n == 0)
-        return false;
-    return (ceil(log2(n)) == floor(log2(n)));
+int logTwo(int n) {
+    if (n == 0) return -1;
+    int count = 0;
+    while ((n % 2) == 0) {
+        n >>= 1;
+        count++;
+    }
+    return n == 1 ? count : -1;
 }
 
 bool callLoad(){
@@ -33,51 +37,63 @@ bool callStore(){
     return 0;
 }
 
+bool checkInput(char** argv) {
+    std::string arg4 = argv[4];
+    if (arg4 != "write-allocate" && arg4 != "no-write-allocate") return false;
+
+    std::string arg5 = argv[5];
+    if (arg5 != "write-through" && arg5 != "write-back") return false;
+    if (arg4 == "no-write-allocate" && arg5 == "write-back") return false;
+
+    std::string arg6 = argv[6];
+    if (arg6 != "lru" && arg6 != "fifo") return false;
+
+    return true;
+}
+
 int main(int argc, char** argv) { 
     if (argc != 7) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
-    
-    int input1, input2, input3;
-    try {
-        input1 = std::stoi(argv[1]);
-        input2 = std::stoi(argv[2]);
-        input3 = std::stoi(argv[3]);        
-    } catch(std::exception& err) {
+    std::string arg1 = argv[1], arg2 = argv[2], arg3 = argv[3];   
+    for (char const &ch : arg1) {
+        if (isdigit(ch) == 0) {
+            fprintf(stderr, "%s", "Error!\n");
+            return 1;
+        }
+    }
+    for (char const &ch : arg2) {
+        if (isdigit(ch) == 0) {
+            fprintf(stderr, "%s", "Error!\n");
+            return 1;
+        }
+    }
+    for (char const &ch : arg3) {
+        if (isdigit(ch) == 0) {
+            fprintf(stderr, "%s", "Error!\n");
+            return 1;
+        }
+    }  
+    int input1 = std::stoi(argv[1]), input2 = std::stoi(argv[2]), input3 = std::stoi(argv[3]);
+    if (logTwo(input1) == -1 || logTwo(input2) == -1 || logTwo(input3) == -1 || input3 < 4) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
-    if (!isPowerOfTwo(input1) || !isPowerOfTwo(input2) || !isPowerOfTwo(input3) || input3 < 4) {
-        fprintf(stderr, "%s", "Error!\n");
-        return 1;
-    }
-    std::string arg4 = argv[4];
-    if (arg4 != "write-allocate" && arg4 != "no-write-allocate") {
-        fprintf(stderr, "%s", "Error!\n");
-        return 1;
-    }
-    std::string arg5 = argv[5];
-    if (arg5 != "write-through" && arg5 != "write-back") {
-        fprintf(stderr, "%s", "Error!\n");
-        return 1;
-    }
-    std::string arg6 = argv[6];
-    if (arg6 != "lru" && arg6 != "fifo") {
+    if (!checkInput(argv)) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
 
     std::string line;
-    std::vector<Slot> slots;
-    std::vector<Set> sets;
+    std::vector<Slot> slots(input2);
+    std::vector<Set> sets(input1);
 
     Cache cache = {sets};
     Set set = {slots};
     
-    int count = 0, load = 0, store = 0;
-    int loadHit = 0, loadMiss = 0;
-    int storeHit = 0, storeMiss = 0;
+    int count = 0, load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
+
     while (std::getline(std::cin, line) && (!line.empty())) {
         if (count >= input1 * input2) break;
 
@@ -85,7 +101,7 @@ int main(int argc, char** argv) {
         std::string address = line.substr(2, 10);
         // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
         // uint32_t = stol(address, 0 ,16);
-        Slot s = {stoi(address, 0 ,16),true};
+        Slot s = {stoi(address, 0 ,16), true};
         
         if (op == "l") {
             (callLoad()) ? loadHit++ : loadMiss++;
@@ -105,3 +121,7 @@ int main(int argc, char** argv) {
     std::cout << "Total cycles: " << load << std::endl;
     return 0;
 }
+
+//Questions: 
+//1. How to utilize enum in string inputs
+//2. Why access_ts AND load_ts?
