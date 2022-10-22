@@ -26,18 +26,55 @@ bool callStore(){
     return 0;
 }
 
-bool checkInput(char** argv) {
+int checkInput1(char** argv) {
+    std::string arg1 = argv[1];
+    for (char const &ch : arg1) {
+        if (isdigit(ch) == 0) return -1;
+    }
+    int input = std::stoi(argv[1]);
+    if (logTwo(input) == -1) return -1;
+    return input;
+}
+
+int checkInput2(char** argv) {
+    std::string arg2 = argv[2];
+    for (char const &ch : arg2) {
+        if (isdigit(ch) == 0) return -1;
+    }
+    int input = std::stoi(argv[2]);
+    if (logTwo(input) == -1) return -1;
+    return input;
+}
+
+int checkInput3(char** argv) {
+    std::string arg3 = argv[3];
+    for (char const &ch : arg3) {
+        if (isdigit(ch) == 0) return -1;
+    }
+    int input = std::stoi(argv[3]);
+    if (logTwo(input) == -1 || input < 4) return -1;
+    return logTwo(input);
+}
+
+int checkInput4(char** argv) {
     std::string arg4 = argv[4];
-    if (arg4 != "write-allocate" && arg4 != "no-write-allocate") return false;
+    if (arg4 == "write-allocate") return 2;
+    else if (arg4 == "no-write-allocate") return 1;
+    else return -1;
+}
 
+int checkInput5(char** argv) {
     std::string arg5 = argv[5];
-    if (arg5 != "write-through" && arg5 != "write-back") return false;
-    if (arg4 == "no-write-allocate" && arg5 == "write-back") return false;
+    if (arg5 == "write-through") return 2;
+    else if (arg5 == "write-back") return 1;
+    else return -1;
+}
 
+int checkInput6(char** argv) {
     std::string arg6 = argv[6];
-    if (arg6 != "lru" && arg6 != "fifo") return false;
-
-    return true;
+    if (arg6 == "lru") return 2;
+    else if (arg6 == "fifo") return 1;
+    else return -1;
 }
 
 int main(int argc, char** argv) { 
@@ -45,58 +82,37 @@ int main(int argc, char** argv) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
-    std::string arg1 = argv[1], arg2 = argv[2], arg3 = argv[3];   
-    for (char const &ch : arg1) {
-        if (isdigit(ch) == 0) {
-            fprintf(stderr, "%s", "Error!\n");
-            return 1;
-        }
-    }
-    for (char const &ch : arg2) {
-        if (isdigit(ch) == 0) {
-            fprintf(stderr, "%s", "Error!\n");
-            return 1;
-        }
-    }
-    for (char const &ch : arg3) {
-        if (isdigit(ch) == 0) {
-            fprintf(stderr, "%s", "Error!\n");
-            return 1;
-        }
-    }  
-    int input1 = std::stoi(argv[1]), input2 = std::stoi(argv[2]), input3 = std::stoi(argv[3]);
-    int size1 = logTwo(input1), size2 = logTwo(input2), size3 = logTwo(input3);
-    if (size1 == -1 || size2 == -1 || size3 == -1 || input3 < 4) {
+    int inp1 = checkInput1(argv), inp2 = checkInput2(argv), inp3 = checkInput3(argv);
+    int inp4 = checkInput4(argv), inp5 = checkInput5(argv), inp6 = checkInput6(argv);
+    if (inp1 < 0 || inp2 < 0 || inp3 < 0 || inp4 < 0 || inp5 < 0 || inp6 < 0) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
-    if (!checkInput(argv)) {
+    if (inp4 == 1 && inp5 == 1) {
         fprintf(stderr, "%s", "Error!\n");
         return 1;
     }
-
-    std::string line;
-    std::vector<Csim::Slot> slots(input2);
-    std::vector<Csim::Set> sets(size1);
-
-    Csim::Cache ca = {sets};
-    Csim::Set set = {slots};
     
-    int count = 0;
+    std::vector<Csim::Set> sets(inp1);
+    int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
+    Csim::Cache cache = {sets, inp4-1, inp5-1, inp6-1, t};
+    
     unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
+    std::string op;
+    uint32_t ad;
+    int dummy;
 
-    while (std::getline(std::cin, line) && (!line.empty())) {
-        if (count >= input1 * input2) break;
+    while (std::cin >> op) {
 
-        std::string op = line.substr(0, 1);
-        std::string address = line.substr(2, 10);
+        std::cin >> std::hex >> ad;
+        std::cin >> dummy;
+
         // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
         // uint32_t = stol(address, 0 ,16);
-        uint32_t ad = stoi(address, 0, 16);
 
-        ad >>= size3; // Get rid of the offset
-        uint32_t index = ad % input1; // Get index
-        ad >>= size1; // Get the rest which is the tag
+        ad >>= inp3; // Get rid of the offset
+        uint32_t index = ad % inp1; // Get index
+        ad >>= logTwo(inp1); // Get the rest which is the tag
         Csim::Slot s = {ad, true}; // Initialize slot
 
         /*if (ca.sets.at(index) == NULL) {
@@ -115,7 +131,6 @@ int main(int argc, char** argv) {
             (callStore()) ? storeHit++ : storeMiss++;
             store++;
         }
-        count++;
     }
     std::cout << "Total loads: " << load << std::endl;
     std::cout << "Total stores: " << store << std::endl;
@@ -128,5 +143,8 @@ int main(int argc, char** argv) {
 }
 
 //Questions: 
-//1. How to utilize enum in string inputs
-//2. Why access_ts AND load_ts?
+//1. Expel the block with lowest ts, does this mean iterating through every element?
+//2. Why access_ts (lru) (Reset ts for same address, same set) AND load_ts (fifo) (Don't change ts)
+//write-through (Replace same tag, +100 cycles) write-back (Set same tag invalid, add new tag, when being replaced, if slot is valid, +100 cycles)
+//write-allocate, load into cache, no-write-allocate only +100  cycles
+//load miss, load into cache from memory, +100 cycles
