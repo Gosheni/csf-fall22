@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include "Slot.hpp"
 
 namespace Csim 
@@ -18,9 +19,12 @@ namespace Csim
     
         // Returns true if the designated player is in mate
         std::vector<Slot> getSlots();
+
+        std::map<unsigned long, unsigned long> getIndex();
     
     private:
         std::vector<Slot> slots;
+        std::map<unsigned long, unsigned long> index; //map of tag to index of slot
     };
 }
 

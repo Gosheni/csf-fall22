@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <map>
 #include "Set.hpp"
 #include "Slot.hpp"
 
@@ -13,5 +14,9 @@ namespace Csim
     
     std::vector<Slot> Set::getSlots() {
         return slots;
+    }
+
+    std::map<unsigned long, unsigned long> Set::getIndex() {
+        return index;
     }
 }

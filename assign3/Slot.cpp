@@ -7,6 +7,7 @@ namespace Csim
 
     Slot::Slot(uint32_t tag) {
         tag = tag;
+        valid = true;
     }
 
     Slot::Slot(uint32_t tag, bool valid) {

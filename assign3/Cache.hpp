@@ -17,7 +17,7 @@ namespace Csim
 
     Cache(std::vector<Set> s);
 
-    Cache(std::vector<Set> s, bool allocate, bool type);
+    Cache(std::vector<Set> s, bool all, bool wr, bool l, int t);
     
     // Copy constructor
     Cache(const Cache& cache);
@@ -28,14 +28,20 @@ namespace Csim
     // Checks if given move is allowed
     bool getAllocate();
 
-    bool getType();
+    bool getWrite();
+
+    bool getLru();
+
+    int getType();
 
     std::vector<Set> getSet();
     
   private:
     std::vector<Set> sets;
-    bool allocation;
-    bool type;
+    bool allocate;
+    bool write;
+    bool lru;
+    int type; // 1 -> Direct, 2 -> Set, 3 -> Full 
   };
 }
 

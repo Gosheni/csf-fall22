@@ -7,19 +7,21 @@
 namespace Csim {
     Cache::Cache(){}
 
-    Cache::Cache(std::vector<Set> sets) {
+    Cache::Cache(std::vector<Set> sets, bool all, bool wr, bool l, int t) {
         sets = sets;
-    }
-
-    Cache::Cache(std::vector<Set> sets, bool all, bool typ) {
-        sets = sets;
-        allocation = all;
-        type = typ;
+        allocate = all;
+        write = wr;
+        lru = l;
+        type = t;
     }
 
     //Copy constructor
     Cache::Cache(const Cache& cache) {
       sets = cache.sets;
+      allocate = cache.allocate;
+      write = cache.write;
+      lru = cache.lru;
+      type = cache.type;
     }
 
     // Deconstructor helper function
@@ -28,10 +30,18 @@ namespace Csim {
     }
 
     bool Cache::getAllocate() {
-      return allocation;
+      return allocate;
     }
 
-    bool Cache::getType() {
+    bool Cache::getWrite() {
+      return write;
+    }
+
+    bool Cache::getLru() {
+      return lru;
+    }
+
+    int Cache::getType() {
       return type;
     }
 
