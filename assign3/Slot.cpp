@@ -8,11 +8,15 @@ namespace Csim
     Slot::Slot(uint32_t tag) {
         tag = tag;
         valid = true;
+        load_ts = 0;
+        access_ts = 0;
     }
 
     Slot::Slot(uint32_t tag, bool valid) {
         tag = tag;
         valid = valid;
+        load_ts = 0;
+        access_ts = 0;
     }
 
     Slot::Slot(uint32_t tag, bool valid, unsigned long load_ts, unsigned long access_ts) {

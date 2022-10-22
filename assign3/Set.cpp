@@ -6,12 +6,19 @@
 
 namespace Csim 
 {
-    Set::Set(){}
+    Set::Set() {
+        std::vector<Slot> s;
+        std::map<unsigned long, unsigned long> map;
+        slots = s;
+        index = map;
+    }
 
     Set::Set(std::vector<Slot> s) {
         slots = s;
+        std::map<unsigned long, unsigned long> map;
+        index = map;
     }
-    
+
     std::vector<Slot> Set::getSlots() {
         return slots;
     }

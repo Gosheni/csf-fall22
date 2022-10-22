@@ -18,14 +18,6 @@ int logTwo(int n) {
     return n == 1 ? count : -1;
 }
 
-bool callLoad(){
-    return 0;
-}
-
-bool callStore(){
-    return 0;
-}
-
 int checkInput1(char** argv) {
     std::string arg1 = argv[1];
     for (char const &ch : arg1) {
@@ -94,8 +86,13 @@ int main(int argc, char** argv) {
     }
     
     std::vector<Csim::Set> sets(inp1);
+    for (int i = 0; i < inp1; i++) {
+        std::vector<Csim::Slot> slots;
+        Csim::Set s(slots);
+        sets.push_back(s);
+    }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
-    Csim::Cache cache = {sets, inp4-1, inp5-1, inp6-1, t};
+    Csim::Cache cache((&sets), inp4-1, inp5-1, inp6-1, t);
     
     unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
     std::string op;
@@ -113,22 +110,12 @@ int main(int argc, char** argv) {
         ad >>= inp3; // Get rid of the offset
         uint32_t index = ad % inp1; // Get index
         ad >>= logTwo(inp1); // Get the rest which is the tag
-        Csim::Slot s = {ad, true}; // Initialize slot
-
-        /*if (ca.sets.at(index) == NULL) {
-            std::vector<Slot> slots(input2);
-            Set st = {slots};
-            sets.at(index) = st;
-            st.slots.push_back(s);
-        } else {
-            ca.sets.at(index).slots.push_back(s);
-        }*/
         
         if (op == "l") {
-            (callLoad()) ? loadHit++ : loadMiss++;
+            cache.callLoad(cache, ad, index, (size_t)inp2) ? loadHit++ : loadMiss++;
             load++;
         } else {
-            (callStore()) ? storeHit++ : storeMiss++;
+            cache.callStore(cache, ad, index, (size_t)inp2) ? storeHit++ : storeMiss++;
             store++;
         }
     }

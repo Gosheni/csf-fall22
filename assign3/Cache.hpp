@@ -15,9 +15,7 @@ namespace Csim
     // piece positions, and sets the state to white's turn
     Cache();
 
-    Cache(std::vector<Set> s);
-
-    Cache(std::vector<Set> s, bool all, bool wr, bool l, int t);
+    Cache(std::vector<Set>* s, bool all, bool wr, bool l, int t);
     
     // Copy constructor
     Cache(const Cache& cache);
@@ -25,7 +23,12 @@ namespace Csim
     // Deconstructor helper function
     void delete_cache();
 
-    // Checks if given move is allowed
+    bool callLoad(Csim::Cache cache, uint32_t ad, uint32_t index, size_t n);
+
+    bool callStore(Csim::Cache cache, uint32_t ad, uint32_t index, size_t n);
+    
+    void evict(std::vector<Slot> slots);
+
     bool getAllocate();
 
     bool getWrite();
