@@ -22,11 +22,16 @@ namespace Csim
 
         void setSlots(std::vector<Slot>* s);
 
+        unsigned long sizeOfSlots();
+
+        void incSize();
+
         std::map<unsigned long, unsigned long> getIndex();
     
     private:
         std::vector<Slot> slots;
         std::map<unsigned long, unsigned long> index; //map of tag to index of slot
+        unsigned long size;
     };
 }
 

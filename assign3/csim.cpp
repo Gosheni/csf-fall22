@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     
     std::vector<Csim::Set> sets(inp1);
     for (int i = 0; i < inp1; i++) { // Fill with empty pre-sized Sets of empty pre-sized Slots
-        std::vector<Csim::Slot> slots;
+        std::vector<Csim::Slot> slots(inp2);
         Csim::Set s(&slots);
         sets[i] = s;
     }
