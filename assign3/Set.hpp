@@ -22,6 +22,8 @@ namespace Csim
 
         void setSlots(std::vector<Slot>* s);
 
+        void setMap(std::map<unsigned long, unsigned long>* m);
+
         unsigned long sizeOfSlots();
 
         void incSize();

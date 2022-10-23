@@ -23,13 +23,17 @@ namespace Csim
     // Deconstructor helper function
     void delete_cache();
 
-    bool callLoad(uint32_t ad, uint32_t index, size_t n);
+    bool callLoad(uint32_t ad, uint32_t index, size_t n, bool valid);
 
-    bool callStore(uint32_t ad, uint32_t index, size_t n);
+    bool callStore(uint32_t ad, uint32_t index, size_t n, bool valid);
 
-    bool callFullLoad(uint32_t ad, size_t n);
+    bool callLoadFull(uint32_t ad, size_t n, bool valid);
 
-    bool callFullStore(uint32_t ad, size_t n);
+    bool callStoreFull(uint32_t ad, size_t n, bool valid);
+
+    bool storeMemory(uint32_t ad, uint32_t index, size_t n, bool valid);
+
+    bool storeMemoryFull(uint32_t ad, size_t n, bool valid);
 
     bool getAllocate();
 

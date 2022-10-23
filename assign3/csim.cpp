@@ -45,7 +45,7 @@ int checkInput3(char** argv) {
     }
     int input = std::stoi(argv[3]);
     if (logTwo(input) == -1 || input < 4) return -1;
-    return logTwo(input);
+    return input;
 }
 
 int checkInput4(char** argv) {
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
     Csim::Cache cache(&sets, inp4-1, inp5-1, inp6-1, t);
     
-    unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
+    unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0, cycles = 0;
     std::string op;
     uint32_t ad;
     int dummy;
@@ -107,19 +107,91 @@ int main(int argc, char** argv) {
         // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
         // uint32_t = stol(address, 0 ,16);
 
-        ad >>= inp3; // Get rid of the offset
+        ad >>= logTwo(inp3); // Get rid of the offset
         uint32_t index = ad % inp1; // Get index
         ad >>= logTwo(inp1); // Get the rest which is the tag
 
         
-        if (op == "l") {
-            if (t == 3) cache.callFullLoad(ad, (size_t)inp2) ? loadHit++ : loadMiss++; //Full-associative
-            else cache.callLoad(ad, index, (size_t)inp2) ? loadHit++ : loadMiss++; //Others
-            load++;
-        } else {
-            if (t == 3) cache.callFullStore(ad, (size_t)inp2) ? loadHit++ : loadMiss++; //Full-associative
-            cache.callStore(ad, index, (size_t)inp2) ? storeHit++ : storeMiss++; //Others
-            store++;
+        if (inp6 == 2) { //LRU implementation
+            if (inp4 == 1 && inp5 == 2) { // No-write-allocate & write-through
+                if (op == "l") { // Load
+                    if (t == 3) { // Full-associative
+                        if (cache.callLoadFull(ad, (size_t)inp2, true)) {
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    } else {
+                        if (cache.callLoad(ad, index, (size_t)inp2, true)) { // Others
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    }
+                    load++;
+                } else { // Store
+                    if (t == 3) cache.storeMemoryFull(ad, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Full-associative
+                    else cache.storeMemory(ad, index, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Others
+                    store++;
+                    cycles += 100;
+                }
+            }
+            if (inp4 == 2 && inp5 == 2) { // write-allocate & write-through
+                if (op == "l") { // Load
+                    if (t == 3) { // Full-associative
+                        if (cache.callLoadFull(ad, (size_t)inp2, true)) {
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    } else {
+                        if (cache.callLoad(ad, index, (size_t)inp2, true)) { // Others
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    }
+                    load++;
+                } else { // Store
+                    if (t == 3) { // Full-associative
+                        if (cache.callStoreFull(ad, (size_t)inp2, true)) {
+                            storeHit++;
+                            cycles += 100;
+                        } else {
+                            storeMiss++;
+                            cycles += inp3/4*100 + 100;
+                        }
+                    } else {
+                        if (cache.callStore(ad, index, (size_t)inp2, true)) { // Others
+                            storeHit++;
+                            cycles += 100;
+                        } else {
+                            storeMiss++;
+                            cycles += inp3/4*100 + 100;
+                        }
+                    }
+                    store++;
+                }
+            }
+            if (inp4 == 2 && inp5 == 1) { // write-allocate & write-back
+                if (op == "l") { // Load
+                    if (t == 3) cache.callLoadFull(ad, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Full-associative
+                    else cache.callLoad(ad, index, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Others
+                    load++;
+                } else { // Store
+                    if (t == 3) cache.callStoreFull(ad, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Full-associative
+                    cache.callStore(ad, index, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Others
+                    store++;
+                }
+            }
         }
     }
     std::cout << "Total loads: " << load << std::endl;
@@ -128,7 +200,7 @@ int main(int argc, char** argv) {
     std::cout << "Load misses: " << loadMiss << std::endl;
     std::cout << "Store hits: " << storeHit << std::endl;
     std::cout << "Store misses: " << storeMiss << std::endl;
-    std::cout << "Total cycles: " << load << std::endl;
+    std::cout << "Total cycles: " << cycles << std::endl;
     return 0;
 }
 

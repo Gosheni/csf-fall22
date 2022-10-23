@@ -42,4 +42,8 @@ namespace Csim
     void Slot::makeValid() {
         valid = true;
     }
+
+    void Slot::makeInvalid() {
+        valid = false;
+    }
 }

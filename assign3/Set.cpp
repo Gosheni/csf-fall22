@@ -29,6 +29,10 @@ namespace Csim
         slots = *s;
     }
 
+    void Set::setMap(std::map<unsigned long, unsigned long>* m) {
+        index = *m;
+    }
+
     unsigned long Set::sizeOfSlots() {
         return size;
     }

@@ -28,6 +28,8 @@ namespace Csim
     void resetTs();
 
     void makeValid();
+
+    void makeInvalid();
     
   private:
     uint32_t tag;

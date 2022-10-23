@@ -30,7 +30,7 @@ namespace Csim
       sets.clear();
     }
 
-    bool Cache::callLoad(uint32_t ad, uint32_t index, size_t n) {
+    bool Cache::callLoad(uint32_t ad, uint32_t index, size_t n, bool valid) {
       //Load
       bool hit = false;
       int toRem = -1;
@@ -38,10 +38,10 @@ namespace Csim
       Csim::Slot slot; //Initializing slot
       slot.setTag(ad);
       slot.resetTs();
-      slot.makeValid();
+      valid ? slot.makeValid() : slot.makeInvalid();
 
       std::vector<Slot> block = sets[index].getSlots();
-      for (size_t i = 0; i < block.size(); i++) {
+      for (size_t i = 0; i < sets[index].sizeOfSlots(); i++) {
         if (block[i].getTs() == n-1) toRem = i;
         if (block[i].getTag() == ad) {
           block[i].resetTs();
@@ -51,19 +51,25 @@ namespace Csim
         }
       }
       if (!hit) {
-        if (toRem > -1) block.erase(block.begin()+toRem);
-        block.push_back(slot); // Pushed to the end of the block
+        if (toRem > -1) {
+          block.erase(block.begin()+toRem);
+        } else {
+          toRem = sets[index].sizeOfSlots();
+        }
+        block[toRem] = slot;
+        sets[index].incSize();
       }
+      sets[index].setSlots(&block);
       return hit;
     }
 
-    bool Cache::callStore(uint32_t ad, uint32_t index, size_t n) {
+    bool Cache::callStore(uint32_t ad, uint32_t index, size_t n, bool valid) {
       //Load
-      callLoad(ad, index, n);
+      callLoad(ad, index, n, valid);
       return 0;
     }
 
-    bool Cache::callFullLoad(uint32_t ad, size_t n) {
+    bool Cache::callLoadFull(uint32_t ad, size_t n, bool valid) {
       //Load
       bool hit = false;
       int toRem = -1;
@@ -71,8 +77,9 @@ namespace Csim
       Csim::Slot slot; //Initializing slot
       slot.setTag(ad);
       slot.resetTs();
-      slot.makeValid();
+      valid ? slot.makeValid() : slot.makeInvalid();
 
+      std::map<unsigned long, unsigned long> temp = sets[0].getIndex();
       std::vector<Slot> block = sets[0].getSlots();
       for (size_t i = 0; i < sets[0].sizeOfSlots(); i++) {
         if (block[i].getTs() == n-1) toRem = i; // Save the index of highest ts
@@ -91,16 +98,51 @@ namespace Csim
         }
         block[toRem] = slot;
         sets[0].incSize();
-        sets[0].getIndex()[ad] = toRem;
+        temp[ad] = toRem;
+        sets[0].setMap(&temp);
       }
       sets[0].setSlots(&block);
       return hit;
     }
 
-    bool Cache::callFullStore(uint32_t ad, size_t n) {
+    bool Cache::callStoreFull(uint32_t ad, size_t n, bool valid) {
       //Load
-      callFullLoad(ad, n);
+      callLoadFull(ad, n, valid);
       return 0;
+    }
+
+    bool Cache::storeMemory(uint32_t ad, uint32_t index, size_t n, bool valid) {
+      //Load
+      bool hit = false;
+      std::vector<Slot> block = sets[index].getSlots();
+      for (size_t i = 0; i < sets[index].sizeOfSlots(); i++) {
+        if (block[i].getTag() == ad) { // If it's a hit
+          block[i].resetTs(); // Reset ts to 0
+          hit = true;
+        } else {
+          block[i].incTs(); // Else inc ts
+        }
+      }
+      if (hit) sets[0].setSlots(&block); // If it's store miss, sets doesn't get updated
+      return hit;
+    }
+
+    bool Cache::storeMemoryFull(uint32_t ad, size_t n, bool valid) {
+
+      std::map<unsigned long, unsigned long> m = sets[0].getIndex();
+      std::map<unsigned long, unsigned long>::iterator it = m.find(ad); // Check if map gets updated
+      if (m.empty() || it == sets[0].getIndex().end()) return false; // Store miss 
+
+      std::vector<Slot> block = sets[0].getSlots();
+      for (size_t i = 0; i < sets[0].sizeOfSlots(); i++) {
+        if (block[i].getTag() == ad) { // If it's a hit
+          block[i].resetTs(); // Reset ts to 0
+        } else {
+          block[i].incTs(); // Else inc ts
+        }
+      }
+      sets[0].setSlots(&block);
+      return true; // Store hit
     }
 
     bool Cache::getAllocate() {
