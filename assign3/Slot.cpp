@@ -3,27 +3,16 @@
 
 namespace Csim 
 {
-    Slot::Slot(){}
-
-    Slot::Slot(uint32_t tag) {
-        tag = tag;
+    Slot::Slot() {
+        tag = 0;
         valid = true;
-        load_ts = 0;
-        access_ts = 0;
+        timestamp = 0;
     }
 
-    Slot::Slot(uint32_t tag, bool valid) {
+    Slot::Slot(uint32_t tag, bool valid, unsigned long ts) {
         tag = tag;
         valid = valid;
-        load_ts = 0;
-        access_ts = 0;
-    }
-
-    Slot::Slot(uint32_t tag, bool valid, unsigned long load_ts, unsigned long access_ts) {
-        tag = tag;
-        valid = valid;
-        load_ts = load_ts;
-        access_ts = access_ts;
+        timestamp = ts;
     }
 
     bool Slot::isValid() {
@@ -34,11 +23,23 @@ namespace Csim
         return tag;
     }
 
-    unsigned long Slot::getLoad_ts() {
-        return load_ts;
+    void Slot::setTag(uint32_t t) {
+        tag = t;
     }
 
-    unsigned long Slot::getAccess_ts() {
-        return access_ts;
+    unsigned long Slot::getTs() {
+        return timestamp;
+    }
+
+    void Slot::incTs() {
+        timestamp++;
+    }
+
+    void Slot::resetTs() {
+        timestamp = 0;
+    }
+
+    void Slot::makeValid() {
+        valid = true;
     }
 }

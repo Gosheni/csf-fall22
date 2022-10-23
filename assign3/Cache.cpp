@@ -30,34 +30,70 @@ namespace Csim
       sets.clear();
     }
 
-    bool Cache::callLoad(Csim::Cache cache, uint32_t ad, uint32_t index, size_t n) {
-      std::cout << ad << std::endl;
+    bool Cache::callLoad(uint32_t ad, uint32_t index, size_t n) {
       //Load
-      std::vector<Set> s = cache.getSet();
-      Slot slot = {ad, true};
-      if (cache.getType() == 3) {
-        if (s[0].getSlots().size() >= n) evict(s[0].getSlots());
-        s[0].getSlots().push_back(slot);
-        int ind = s[0].getSlots().size()-1;
-        s[0].getIndex()[ad] = ind;
-      } else {
-        if (s[index].getSlots().size() >= n) evict(s[index].getSlots());
-        s[index].getSlots().push_back(slot);
+      bool hit = false;
+      int toRem = -1;
+      Slot slot = {ad, true, 0};
+      std::vector<Slot> block = sets[index].getSlots();
+      for (size_t i = 0; i < block.size(); i++) {
+        if (block[i].getTs() == n-1) toRem = i;
+        if (block[i].getTag() == ad) {
+          block[i].resetTs();
+          hit = true;
+        } else {
+          block[i].incTs();
+        }
       }
-      return 0;
+      if (!hit) {
+        if (toRem > -1) block.erase(block.begin()+toRem);
+        block.push_back(slot); // Pushed to the end of the block
+      }
+      return hit ? 1 : 0;
     }
 
-    bool Cache::callStore(Csim::Cache cache, uint32_t ad, uint32_t index, size_t n) {
+    bool Cache::callStore(uint32_t ad, uint32_t index, size_t n) {
       //Load
-      callLoad(cache, ad, index, n);
+      callLoad(ad, index, n);
       return 0;
     }
 
-    void Cache::evict(std::vector<Slot> slots) {
-      //Find index of block using ts
-      int index = 0;
-      std::cout << 0 << std::endl;
-      slots.erase(slots.begin() + index);
+    bool Cache::callFullLoad(uint32_t ad, size_t n) {
+      //Load
+      bool hit = false;
+      int toRem = -1;
+
+      Csim::Slot slot; //Initializing slot
+      slot.setTag(ad);
+      slot.resetTs();
+      slot.makeValid();
+
+      std::vector<Slot> block = sets[0].getSlots();
+      for (size_t i = 0; i < block.size(); i++) {
+        //std::cout << i << std::endl;
+        //std::cout << block[i].getTag() << std::endl;
+        if (block[i].getTs() == n-1) toRem = i;
+        if (block[i].getTag() == ad) {
+          block[i].resetTs();
+          hit = true;
+        } else {
+          block[i].incTs();
+        }
+      }
+      if (!hit) {
+        if (toRem > -1) block.erase(block.begin()+toRem);
+        block.push_back(slot); // Pushed to the end of the block
+      }
+      int index = block.size()-1; 
+      sets[0].getIndex()[ad] = index;
+      sets[0].setSlots(&block);
+      return hit ? 1 : 0;
+    }
+
+    bool Cache::callFullStore(uint32_t ad, size_t n) {
+      //Load
+      callFullLoad(ad, n);
+      return 0;
     }
 
     bool Cache::getAllocate() {

@@ -13,14 +13,18 @@ namespace Csim
         index = map;
     }
 
-    Set::Set(std::vector<Slot> s) {
-        slots = s;
+    Set::Set(std::vector<Slot>* s) {
+        slots = *s;
         std::map<unsigned long, unsigned long> map;
         index = map;
     }
 
     std::vector<Slot> Set::getSlots() {
         return slots;
+    }
+
+    void Set::setSlots(std::vector<Slot>* s) {
+        slots = *s;
     }
 
     std::map<unsigned long, unsigned long> Set::getIndex() {

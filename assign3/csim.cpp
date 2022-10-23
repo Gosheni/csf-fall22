@@ -86,13 +86,13 @@ int main(int argc, char** argv) {
     }
     
     std::vector<Csim::Set> sets(inp1);
-    for (int i = 0; i < inp1; i++) {
+    for (int i = 0; i < inp1; i++) { // Fill with empty pre-sized Sets of empty pre-sized Slots
         std::vector<Csim::Slot> slots;
-        Csim::Set s(slots);
-        sets.push_back(s);
+        Csim::Set s(&slots);
+        sets[i] = s;
     }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
-    Csim::Cache cache((&sets), inp4-1, inp5-1, inp6-1, t);
+    Csim::Cache cache(&sets, inp4-1, inp5-1, inp6-1, t);
     
     unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0;
     std::string op;
@@ -110,12 +110,15 @@ int main(int argc, char** argv) {
         ad >>= inp3; // Get rid of the offset
         uint32_t index = ad % inp1; // Get index
         ad >>= logTwo(inp1); // Get the rest which is the tag
+
         
         if (op == "l") {
-            cache.callLoad(cache, ad, index, (size_t)inp2) ? loadHit++ : loadMiss++;
+            if (t == 3) cache.callFullLoad(ad, (size_t)inp2) ? loadHit++ : loadMiss++; //Full-associative
+            else cache.callLoad(ad, index, (size_t)inp2) ? loadHit++ : loadMiss++; //Others
             load++;
         } else {
-            cache.callStore(cache, ad, index, (size_t)inp2) ? storeHit++ : storeMiss++;
+            if (t == 3) cache.callFullStore(ad, (size_t)inp2) ? loadHit++ : loadMiss++; //Full-associative
+            cache.callStore(ad, index, (size_t)inp2) ? storeHit++ : storeMiss++; //Others
             store++;
         }
     }

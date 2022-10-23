@@ -15,10 +15,12 @@ namespace Csim
         // piece positions, and sets the state to white's turn
         Set();
     
-        Set(std::vector<Slot> s);
+        Set(std::vector<Slot>* s);
     
         // Returns true if the designated player is in mate
         std::vector<Slot> getSlots();
+
+        void setSlots(std::vector<Slot>* s);
 
         std::map<unsigned long, unsigned long> getIndex();
     
