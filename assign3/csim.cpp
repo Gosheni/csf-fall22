@@ -1,10 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <cmath>
 #include <string>
-#include <sstream>
-#include <exception>
-#include <unordered_map>
+#include <map>
 
 struct Slot {
     uint32_t tag;
@@ -14,7 +11,7 @@ struct Slot {
 
 struct Set {
     std::vector<Slot> slots;
-    std::unordered_map<uint32_t, int> index; //map of tag to index of slot
+    std::map<uint32_t, int> index; //map of tag to index of slot
     int size;
 };
 
@@ -92,13 +89,13 @@ bool callLoadFull(Cache &c, uint32_t ad, size_t n) {
     slot.valid = true;
 
     std::vector<Slot> block = c.sets[0].slots;
-    std::unordered_map<uint32_t, int> temp = c.sets[0].index;
-    std::unordered_map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
-    if (!temp.empty() && it != temp.end()) {
+    auto it = c.sets[0].index.find(ad); // Check if map gets updated
+    if (it != c.sets[0].index.end()) {
         toRem = it->second;
+        unsigned long max = block[toRem].timestamp;
         hit = true;
         for (int i = 0; i < c.sets[0].size; i++) {
-            if (block[i].timestamp < block[toRem].timestamp) {
+            if (block[i].timestamp < max) {
                 block[i].timestamp++;
             }
         } 
@@ -111,14 +108,14 @@ bool callLoadFull(Cache &c, uint32_t ad, size_t n) {
                 toRem = j;
             }
         } 
-        if (toRem > -1) temp.erase(block[toRem].tag);
+        if (toRem > -1) c.sets[0].index.erase(block[toRem].tag);
         else if (toRem == -1) {
             toRem = c.sets[0].size;
             c.sets[0].size++;
         }
         block[toRem] = slot;
-        temp[ad] = toRem;
-        c.sets[0].index = temp;
+        c.sets[0].index[ad] = toRem;
+        c.sets[0].index = c.sets[0].index;
     } 
     c.sets[0].slots = block;
     return hit;
@@ -151,8 +148,8 @@ bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
 
 bool storeMemoryFull(Cache &c, uint32_t ad) {
 
-    std::unordered_map<uint32_t, int> m = c.sets[0].index;
-    std::unordered_map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
+    std::map<uint32_t, int> m = c.sets[0].index;
+    std::map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
     if (m.empty() || it == m.end()) return false; // Store miss 
 
     std::vector<Slot> block = c.sets[0].slots;
@@ -222,9 +219,8 @@ bool dirtyFull(Cache &c, uint32_t ad, size_t n, uint32_t byte, bool l) {
     slot.valid = l ? true : false;
 
     std::vector<Slot> block = c.sets[0].slots;
-    std::unordered_map<uint32_t, int> temp = c.sets[0].index;
-    std::unordered_map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
-    if (!temp.empty() && it != temp.end()) {
+    auto it = c.sets[0].index.find(ad); // Check if map gets updated
+    if (it != c.sets[0].index.end()) {
         toRem = it->second;
         hit = true;
         for (int i = 0; i < c.sets[0].size; i++) {
@@ -246,16 +242,14 @@ bool dirtyFull(Cache &c, uint32_t ad, size_t n, uint32_t byte, bool l) {
         } 
         if (toRem > -1) {
             if (!block[toRem].valid) c.cycles += byte/4*100;
-            temp.erase(block[toRem].tag);
+            c.sets[0].index.erase(block[toRem].tag);
         } 
         else if (toRem == -1) {
             toRem = c.sets[0].size;
             c.sets[0].size++;
         }
-        if (toRem >= 1024) std::cout << temp.size() << std::endl;
         block[toRem] = slot;
-        temp[ad] = toRem;
-        c.sets[0].index = temp;
+        c.sets[0].index[ad] = toRem;
     } 
     c.sets[0].slots = block;
     return hit;
@@ -348,7 +342,7 @@ int main(int argc, char** argv) {
     }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
     if (t == 3) {
-        std::unordered_map<uint32_t, int> map;
+        std::map<uint32_t, int> map;
         sets[0].index = map;
     }
     Cache cache;
