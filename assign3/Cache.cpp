@@ -54,11 +54,7 @@ namespace Csim
       }
       if (!hit) {
         updateTs(&block, n-1, index);
-        if (toRem > -1) {
-          block.erase(block.begin()+toRem);
-        } else {
-          toRem = sets[index].sizeOfSlots();
-        }
+        if (toRem == -1) toRem = sets[index].sizeOfSlots();
         block[toRem] = slot;
         sets[index].incSize();
       }
@@ -95,12 +91,7 @@ namespace Csim
       }
       if (!hit) {
         updateTs(&block, n-1, 0);
-        std::cout << block[0].getTs() << std::endl;
-        if (toRem > -1) {
-          block.erase(block.begin()+toRem);
-        } else {
-          toRem = sets[0].sizeOfSlots();
-        }
+        if (toRem == -1) toRem = sets[0].sizeOfSlots();
         block[toRem] = slot;
         sets[0].incSize();
 
@@ -166,21 +157,17 @@ namespace Csim
       std::vector<Slot> block = sets[index].getSlots();
       for (size_t i = 0; i < sets[index].sizeOfSlots(); i++) {
         if (block[i].getTs() == n-1) toRem = i;
-        if (block[i].getTag() == ad) {
-          if (!l) block[i].makeInvalid();
+        if (block[i].getTag() == ad) { // Means it's hit
+          updateTs(&block, block[i].getTs(), index); // Increase ts of all blocks with ts less than parameter
           block[i].resetTs();
           hit = true;
-        } else {
-          block[i].incTs();
-        }
+          break;
+        } 
       }
       if (!hit) {
-        if (toRem > -1) {
-          if (!block[toRem].isValid()) cycles += byte/4*100;
-          block.erase(block.begin()+toRem);
-        } else {
-          toRem = sets[index].sizeOfSlots();
-        }
+        updateTs(&block, n-1, 0);
+        if (toRem > -1 && !block[toRem].isValid()) cycles += byte/4*100;
+        else if (toRem == -1) toRem = sets[index].sizeOfSlots();
         block[toRem] = slot;
         sets[index].incSize();
       } 
@@ -202,21 +189,17 @@ namespace Csim
       std::vector<Slot> block = sets[0].getSlots();
       for (size_t i = 0; i < sets[0].sizeOfSlots(); i++) {
         if (block[i].getTs() == n-1) toRem = i; // Save the index of highest ts
-        if (block[i].getTag() == ad) { // If it's a hit
-          if (!l) block[i].makeInvalid();
-          block[i].resetTs(); // Reset ts to 0
+        if (block[i].getTag() == ad) { // Means it's hit
+          updateTs(&block, block[i].getTs(), 0); // Increase ts of all blocks with ts less than parameter
+          block[i].resetTs();
           hit = true;
-        } else {
-          block[i].incTs(); // Else inc ts
-        }
+          break;
+        } 
       }
       if (!hit) {
-        if (toRem > -1) {
-          if (!block[toRem].isValid()) cycles += byte/4*100;
-          block.erase(block.begin()+toRem);
-        } else {
-          toRem = sets[0].sizeOfSlots();
-        }
+        updateTs(&block, n-1, 0);
+        if (toRem > -1 && !block[toRem].isValid()) cycles += byte/4*100;
+        else if (toRem == -1) toRem = sets[0].sizeOfSlots();
         block[toRem] = slot;
         sets[0].incSize();
         temp[ad] = toRem;
