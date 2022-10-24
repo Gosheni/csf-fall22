@@ -4,6 +4,18 @@
 #include "Set.hpp"
 #include "Slot.hpp"
 
+struct Slot {
+    uint32_t tag;
+    bool valid;
+    unsigned long timestamp;
+};
+
+struct Set {
+    std::vector<Slot> slots;
+    std::map<unsigned long, unsigned long> index; //map of tag to index of slot
+    unsigned long size;
+};
+
 namespace Csim 
 {
     Cache::Cache(){}
