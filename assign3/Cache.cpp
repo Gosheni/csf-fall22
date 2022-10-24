@@ -44,15 +44,16 @@ namespace Csim
 
       std::vector<Slot> block = sets[index].getSlots();
       for (size_t i = 0; i < sets[index].sizeOfSlots(); i++) {
-        if (block[i].getTs() == n-1) toRem = i;
-        if (block[i].getTag() == ad) {
+        if (block[i].getTs() >= n-1) toRem = i;
+        if (block[i].getTag() == ad) { // Means it's hit
+          updateTs(&block, block[i].getTs(), index); // Increase ts of all blocks with ts less than parameter
           block[i].resetTs();
           hit = true;
-        } else {
-          block[i].incTs();
-        }
+          break;
+        } 
       }
       if (!hit) {
+        updateTs(&block, n-1, index);
         if (toRem > -1) {
           block.erase(block.begin()+toRem);
         } else {
@@ -84,15 +85,17 @@ namespace Csim
       std::map<unsigned long, unsigned long> temp = sets[0].getIndex();
       std::vector<Slot> block = sets[0].getSlots();
       for (size_t i = 0; i < sets[0].sizeOfSlots(); i++) {
-        if (block[i].getTs() == n-1) toRem = i; // Save the index of highest ts
-        if (block[i].getTag() == ad) { // If it's a hit
-          block[i].resetTs(); // Reset ts to 0
+        if (block[i].getTs() >= n-1) toRem = i;
+        if (block[i].getTag() == ad) { // Means it's hit
+          updateTs(&block, block[i].getTs(), 0); // Increase ts of all blocks with ts less than parameter
+          block[i].resetTs();
           hit = true;
-        } else {
-          block[i].incTs(); // Else inc ts
-        }
+          break;
+        } 
       }
       if (!hit) {
+        updateTs(&block, n-1, 0);
+        std::cout << block[0].getTs() << std::endl;
         if (toRem > -1) {
           block.erase(block.begin()+toRem);
         } else {
@@ -100,6 +103,7 @@ namespace Csim
         }
         block[toRem] = slot;
         sets[0].incSize();
+
         temp[ad] = toRem;
         sets[0].setMap(&temp);
       } 
@@ -119,11 +123,13 @@ namespace Csim
       std::vector<Slot> block = sets[index].getSlots();
       for (size_t i = 0; i < sets[index].sizeOfSlots(); i++) {
         if (block[i].getTag() == ad) { // If it's a hit
-          block[i].resetTs(); // Reset ts to 0
+          for (size_t j = 0; j < sets[index].sizeOfSlots(); j++) {
+            if (block[j].getTs() < block[i].getTs()) block[j].incTs();
+          }
+          block[i].resetTs();
           hit = true;
-        } else {
-          block[i].incTs(); // Else inc ts
-        }
+          break;
+        } 
       }
       if (hit) sets[0].setSlots(&block); // If it's store miss, sets doesn't get updated
       return hit;
@@ -218,6 +224,12 @@ namespace Csim
       } 
       sets[0].setSlots(&block);
       return hit;
+    }
+
+    void Cache::updateTs(std::vector<Slot>* block, uint32_t max, uint32_t index) {
+      for (size_t j = 0; j < sets[index].sizeOfSlots(); j++) {
+        if ((*block)[j].getTs() < max) (*block)[j].incTs();
+      }
     }
 
     bool Cache::getAllocate() {

@@ -39,6 +39,8 @@ namespace Csim
 
     bool dirtyFull(uint32_t ad, size_t n, uint32_t byte, bool l);
 
+    void updateTs(std::vector<Slot>* block, uint32_t max, uint32_t index);
+
     bool getAllocate();
 
     bool getWrite();
