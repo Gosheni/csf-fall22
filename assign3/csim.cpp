@@ -4,9 +4,7 @@
 #include <string>
 #include <sstream>
 #include <exception>
-#include "Cache.hpp"
-#include "Set.hpp"
-#include "Slot.hpp"
+#include <map>
 
 struct Slot {
     uint32_t tag;
@@ -29,15 +27,15 @@ struct Cache {
     unsigned long cycles;
 };
 
-void updateTs(Cache* c, uint32_t max, uint32_t index) {
-    for (size_t j = 0; j < (*c).sets[index].size; j++) {
-        if ((*c).sets[index].slots[j].timestamp < max) {
-            (*c).sets[index].slots[j].timestamp++;
+void updateTs(Cache &c, uint32_t max, uint32_t index) {
+    for (size_t j = 0; j < c.sets[index].size; j++) {
+        if (c.sets[index].slots[j].timestamp < max) {
+            c.sets[index].slots[j].timestamp++;
         }
     }
 }
 
-bool callLoad(Cache* c, uint32_t ad, uint32_t index, size_t n) {
+bool callLoad(Cache &c, uint32_t ad, uint32_t index, size_t n) {
     //Load
     bool hit = false;
     int toRem = -1;
@@ -47,32 +45,43 @@ bool callLoad(Cache* c, uint32_t ad, uint32_t index, size_t n) {
     slot.timestamp = 0;
     slot.valid = true;
 
-    std::vector<Slot> block = (*c).sets[index].slots;
-    for (size_t i = 0; i < (*c).sets[index].size; i++) {
+    std::vector<Slot> block = c.sets[index].slots;
+    for (size_t i = 0; i < c.sets[index].size; i++) {
         if (block[i].timestamp >= n-1) toRem = i;
         if (block[i].tag == ad) { // Means it's hit
-            updateTs(c, block[i].timestamp, index); // Increase ts of all blocks with ts less than parameter
+            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+                if (block[j].timestamp < block[i].timestamp) {
+                    block[j].timestamp++;
+                }
+            } 
             block[i].timestamp = 0;
             hit = true;
             break;
         } 
     }
     if (!hit) {
-        updateTs(c, n-1, index);
-        if (toRem == -1) toRem = (*c).sets[index].size;
+        for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            }
+        } 
+        if (toRem == -1) {
+            toRem = c.sets[index].size;
+            c.sets[index].size++;
+        }
         block[toRem] = slot;
-        (*c).sets[index].size++;
+        
     }
-    (*c).sets[index].slots = block; // See if this is necessary
+    c.sets[index].slots = block; // See if this is necessary
     return hit;
 }
 
-bool callStore(Cache* c, uint32_t ad, uint32_t index, size_t n) {
+bool callStore(Cache &c, uint32_t ad, uint32_t index, size_t n) {
     //Load
     return callLoad(c, ad, index, n);
 }
 
-bool callLoadFull(Cache* c, uint32_t ad, size_t n) {
+bool callLoadFull(Cache &c, uint32_t ad, size_t n) {
     //Load
     bool hit = false;
     int toRem = -1;
@@ -82,70 +91,85 @@ bool callLoadFull(Cache* c, uint32_t ad, size_t n) {
     slot.timestamp = 0;
     slot.valid = true;
 
-    std::map<unsigned long, unsigned long> temp = (*c).sets[0].index;
-    std::vector<Slot> block = (*c).sets[0].slots;
-    for (size_t i = 0; i < (*c).sets[0].size; i++) {
+    std::map<unsigned long, unsigned long> temp = c.sets[0].index;
+    std::vector<Slot> block = c.sets[0].slots;
+    for (size_t i = 0; i < c.sets[0].size; i++) {
         if (block[i].timestamp >= n-1) toRem = i;
         if (block[i].tag == ad) { // Means it's hit
-            updateTs(c, block[i].timestamp, 0); // Increase ts of all blocks with ts less than parameter
+            for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+                if (block[j].timestamp < block[i].timestamp) {
+                    block[j].timestamp++;
+                }
+            } 
             block[i].timestamp = 0;
             hit = true;
             break;
         } 
     }
     if (!hit) {
-        updateTs(c, n-1, 0);
-        if (toRem == -1) toRem = (*c).sets[0].size;
+        for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            }
+        } 
+        if (toRem == -1) {
+            toRem = c.sets[0].size;
+            c.sets[0].size++;
+        }
         block[toRem] = slot;
-        (*c).sets[0].size++;
+        
 
         temp[ad] = toRem;
-        (*c).sets[0].index = temp; // See if necessary
+        c.sets[0].index = temp; // See if necessary
     } 
-    (*c).sets[0].slots = block; // See if necessary
+    c.sets[0].slots = block; // See if necessary
     return hit;
 }
 
-bool callStoreFull(Cache* c, uint32_t ad, size_t n) {
+bool callStoreFull(Cache &c, uint32_t ad, size_t n) {
     //Load
     return callLoadFull(c, ad, n);
 }
 
-bool storeMemory(Cache* c, uint32_t ad, uint32_t index) {
+bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
     //Load
     bool hit = false;
-    std::vector<Slot> block = (*c).sets[index].slots;
-    for (size_t i = 0; i < (*c).sets[index].size; i++) {
+    std::vector<Slot> block = c.sets[index].slots;
+    for (size_t i = 0; i < c.sets[index].size; i++) {
         if (block[i].tag == ad) { // If it's a hit
-            updateTs(c, block[i].timestamp, index);
+            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+                if (block[j].timestamp < block[i].timestamp) {
+                    block[j].timestamp++;
+                }
+            } 
             block[i].timestamp = 0;
             hit = true;
             break;
         } 
     }
-    if (hit) (*c).sets[0].slots = block; // If it's store miss, sets doesn't get updated
+    if (hit) c.sets[index].slots = block; // If it's store miss, sets doesn't get updated
     return hit;
 }
 
-bool storeMemoryFull(Cache* c, uint32_t ad) {
+bool storeMemoryFull(Cache &c, uint32_t ad) {
 
-    std::map<unsigned long, unsigned long> m = (*c).sets[0].index;
+    std::map<unsigned long, unsigned long> m = c.sets[0].index;
     std::map<unsigned long, unsigned long>::iterator it = m.find(ad); // Check if map gets updated
-    if (m.empty() || it == (*c).sets[0].index.end()) return false; // Store miss 
+    if (m.empty() || it == c.sets[0].index.end()) return false; // Store miss 
 
-    std::vector<Slot> block = (*c).sets[0].slots;
-    for (size_t i = 0; i < (*c).sets[0].size; i++) {
+    std::vector<Slot> block = c.sets[0].slots;
+    for (size_t i = 0; i < c.sets[0].size; i++) {
         if (block[i].tag == ad) { // If it's a hit
             block[i].timestamp = 0; // Reset ts to 0
         } else {
             block[i].timestamp++; // Else inc ts
         }
     }
-    (*c).sets[0].slots = block;
+    c.sets[0].slots = block;
     return true; // Store hit
 }
 
-bool dirty(Cache* c, uint32_t ad, uint32_t index, size_t n, uint32_t byte, bool l) {
+bool dirty(Cache &c, uint32_t ad, uint32_t index, size_t n, uint32_t byte, bool l) {
     //Load
     bool hit = false;
     int toRem = -1;
@@ -155,28 +179,38 @@ bool dirty(Cache* c, uint32_t ad, uint32_t index, size_t n, uint32_t byte, bool 
     slot.timestamp = 0;
     slot.valid = l ? true : false;
 
-    std::vector<Slot> block = (*c).sets[index].slots;
-    for (size_t i = 0; i < (*c).sets[index].size; i++) {
+    std::vector<Slot> block = c.sets[index].slots;
+    for (size_t i = 0; i < c.sets[index].size; i++) {
         if (block[i].timestamp == n-1) toRem = i;
         if (block[i].tag == ad) { // Means it's hit
-            updateTs(c, block[i].timestamp, index); // Increase ts of all blocks with ts less than parameter
+            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+                if (block[j].timestamp < block[i].timestamp) {
+                    block[j].timestamp++;
+                }
+            } 
             block[i].timestamp = 0;
             hit = true;
             break;
         } 
     }
     if (!hit) {
-        updateTs(c, n-1, 0);
-        if (toRem > -1 && !block[toRem].valid) (*c).cycles += byte/4*100;
-        else if (toRem == -1) toRem = (*c).sets[index].size;
+        for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            }
+        } 
+        if (toRem > -1 && !block[toRem].valid) c.cycles += byte/4*100;
+        else if (toRem == -1) {
+            toRem = c.sets[index].size;
+            c.sets[index].size++;
+        }
         block[toRem] = slot;
-        (*c).sets[index].size++;
     } 
-    (*c).sets[index].slots = block;
+    c.sets[index].slots = block;
     return hit;
 }
 
-bool dirtyFull(Cache* c, uint32_t ad, size_t n, uint32_t byte, bool l) {
+bool dirtyFull(Cache &c, uint32_t ad, size_t n, uint32_t byte, bool l) {
     //Load
     bool hit = false;
     int toRem = -1;
@@ -186,27 +220,37 @@ bool dirtyFull(Cache* c, uint32_t ad, size_t n, uint32_t byte, bool l) {
     slot.timestamp = 0;
     slot.valid = l ? true : false;
 
-    std::map<unsigned long, unsigned long> temp = (*c).sets[0].index;
-    std::vector<Slot> block = (*c).sets[0].slots;
-    for (size_t i = 0; i < (*c).sets[0].size; i++) {
+    std::map<unsigned long, unsigned long> temp = c.sets[0].index;
+    std::vector<Slot> block = c.sets[0].slots;
+    for (size_t i = 0; i < c.sets[0].size; i++) {
         if (block[i].timestamp == n-1) toRem = i; // Save the index of highest ts
         if (block[i].tag == ad) { // Means it's hit
-            updateTs(c, block[i].timestamp, 0); // Increase ts of all blocks with ts less than parameter
+            for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+                if (block[j].timestamp < block[i].timestamp) {
+                    block[j].timestamp++;
+                }
+            } 
             block[i].timestamp = 0;
             hit = true;
             break;
         } 
     }
     if (!hit) {
-        updateTs(c, n-1, 0);
-        if (toRem > -1 && !block[toRem].valid) (*c).cycles += byte/4*100;
-        else if (toRem == -1) toRem = (*c).sets[0].size;
+        for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            }
+        } 
+        if (toRem > -1 && !block[toRem].valid) c.cycles += byte/4*100;
+        else if (toRem == -1) {
+            toRem = c.sets[0].size;
+            c.sets[0].size++;
+        }
         block[toRem] = slot;
-        (*c).sets[0].size++;
         temp[ad] = toRem;
-        (*c).sets[0].index = temp;
+        c.sets[0].index = temp;
     } 
-    (*c).sets[0].slots = block;
+    c.sets[0].slots = block;
     return hit;
 }
 
@@ -329,7 +373,7 @@ int main(int argc, char** argv) {
             if (inp4 == 1 && inp5 == 2) { // No-write-allocate & write-through
                 if (op == "l") { // Load
                     if (t == 3) { // Full-associative
-                        if (callLoadFull(&cache, ad, (size_t)inp2)) {
+                        if (callLoadFull(cache, ad, (size_t)inp2)) {
                             loadHit++;
                             cycles++;
                         } else {
@@ -337,7 +381,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (callLoad(&cache, ad, index, (size_t)inp2)) { // Others
+                        if (callLoad(cache, ad, index, (size_t)inp2)) { // Others
                             loadHit++;
                             cycles++;
                         } else {
@@ -347,8 +391,8 @@ int main(int argc, char** argv) {
                     }
                     load++;
                 } else { // Store
-                    if (t == 3) storeMemoryFull(&cache, ad) ? storeHit++ : storeMiss++; //Full-associative
-                    else storeMemory(&cache, ad, index) ? storeHit++ : storeMiss++; //Others
+                    if (t == 3) storeMemoryFull(cache, ad) ? storeHit++ : storeMiss++; //Full-associative
+                    else storeMemory(cache, ad, index) ? storeHit++ : storeMiss++; //Others
                     store++;
                     cycles += 100;
                 }
@@ -356,7 +400,7 @@ int main(int argc, char** argv) {
             if (inp4 == 2 && inp5 == 2) { // write-allocate & write-through
                 if (op == "l") { // Load
                     if (t == 3) { // Full-associative
-                        if (callLoadFull(&cache, ad, (size_t)inp2)) {
+                        if (callLoadFull(cache, ad, (size_t)inp2)) {
                             loadHit++;
                             cycles++;
                         } else {
@@ -364,7 +408,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (callLoad(&cache, ad, index, (size_t)inp2)) { // Others
+                        if (callLoad(cache, ad, index, (size_t)inp2)) { // Others
                             loadHit++;
                             cycles++;
                         } else {
@@ -375,7 +419,7 @@ int main(int argc, char** argv) {
                     load++;
                 } else { // Store
                     if (t == 3) { // Full-associative
-                        if (callStoreFull(&cache, ad, (size_t)inp2)) {
+                        if (callStoreFull(cache, ad, (size_t)inp2)) {
                             storeHit++;
                             cycles += 100;
                         } else {
@@ -383,7 +427,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100 + 100;
                         }
                     } else {
-                        if (callStore(&cache, ad, index, (size_t)inp2)) { // Others
+                        if (callStore(cache, ad, index, (size_t)inp2)) { // Others
                             storeHit++;
                             cycles += 100;
                         } else {
@@ -398,7 +442,7 @@ int main(int argc, char** argv) {
                 if (op == "l") { // Load
                     bool l = true;
                     if (t == 3) { // Full-associative
-                        if (dirtyFull(&cache, ad, (size_t)inp2, inp3, l)) {
+                        if (dirtyFull(cache, ad, (size_t)inp2, inp3, l)) {
                             loadHit++;
                             cycles++;
                         } else {
@@ -406,7 +450,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (dirty(&cache, ad, index, (size_t)inp2, inp3, l)) { // Others
+                        if (dirty(cache, ad, index, (size_t)inp2, inp3, l)) { // Others
                             loadHit++;
                             cycles++;
                         } else {
@@ -418,7 +462,7 @@ int main(int argc, char** argv) {
                 } else { // Store
                     bool l = false;
                     if (t == 3) { // Full-associative
-                        if (dirtyFull(&cache, ad, (size_t)inp2, inp3, l)) {
+                        if (dirtyFull(cache, ad, (size_t)inp2, inp3, l)) {
                             storeHit++;
                             cycles++;
                         } else {
@@ -426,7 +470,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (dirty(&cache, ad, index, (size_t)inp2, inp3, l)) { // Others
+                        if (dirty(cache, ad, index, (size_t)inp2, inp3, l)) { // Others
                             storeHit++;
                             cycles++;
                         } else {
