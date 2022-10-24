@@ -14,8 +14,8 @@ struct Slot {
 
 struct Set {
     std::vector<Slot> slots;
-    std::map<unsigned long, unsigned long> index; //map of tag to index of slot
-    unsigned long size;
+    std::map<uint32_t, int> index; //map of tag to index of slot
+    int size;
 };
 
 struct Cache {
@@ -28,7 +28,7 @@ struct Cache {
 };
 
 void updateTs(Cache &c, uint32_t max, uint32_t index) {
-    for (size_t j = 0; j < c.sets[index].size; j++) {
+    for (int j = 0; j < c.sets[index].size; j++) {
         if (c.sets[index].slots[j].timestamp < max) {
             c.sets[index].slots[j].timestamp++;
         }
@@ -46,10 +46,10 @@ bool callLoad(Cache &c, uint32_t ad, uint32_t index, size_t n) {
     slot.valid = true;
 
     std::vector<Slot> block = c.sets[index].slots;
-    for (size_t i = 0; i < c.sets[index].size; i++) {
+    for (int i = 0; i < c.sets[index].size; i++) {
         if (block[i].timestamp >= n-1) toRem = i;
         if (block[i].tag == ad) { // Means it's hit
-            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+            for (int j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
                 if (block[j].timestamp < block[i].timestamp) {
                     block[j].timestamp++;
                 }
@@ -60,7 +60,7 @@ bool callLoad(Cache &c, uint32_t ad, uint32_t index, size_t n) {
         } 
     }
     if (!hit) {
-        for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+        for (int j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
             if (block[j].timestamp < n-1) {
                 block[j].timestamp++;
             }
@@ -91,38 +91,36 @@ bool callLoadFull(Cache &c, uint32_t ad, size_t n) {
     slot.timestamp = 0;
     slot.valid = true;
 
-    std::map<unsigned long, unsigned long> temp = c.sets[0].index;
     std::vector<Slot> block = c.sets[0].slots;
-    for (size_t i = 0; i < c.sets[0].size; i++) {
-        if (block[i].timestamp >= n-1) toRem = i;
-        if (block[i].tag == ad) { // Means it's hit
-            for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
-                if (block[j].timestamp < block[i].timestamp) {
-                    block[j].timestamp++;
-                }
-            } 
-            block[i].timestamp = 0;
-            hit = true;
-            break;
-        } 
-    }
-    if (!hit) {
-        for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
-            if (block[j].timestamp < n-1) {
-                block[j].timestamp++;
+    std::map<uint32_t, int> temp = c.sets[0].index;
+    std::map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
+    if (!temp.empty() && it != temp.end()) {
+        toRem = it->second;
+        hit = true;
+        for (int i = 0; i < c.sets[0].size; i++) {
+            if (block[i].timestamp < block[toRem].timestamp) {
+                block[i].timestamp++;
             }
         } 
-        if (toRem == -1) {
+        block[toRem].timestamp = 0;
+    } else { // Not a hit
+        for (int j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            } else if (block[j].timestamp == n-1) {
+                toRem = j;
+            }
+        } 
+        if (toRem > -1) temp.erase(block[toRem].tag);
+        else if (toRem == -1) {
             toRem = c.sets[0].size;
             c.sets[0].size++;
         }
         block[toRem] = slot;
-        
-
         temp[ad] = toRem;
-        c.sets[0].index = temp; // See if necessary
+        c.sets[0].index = temp;
     } 
-    c.sets[0].slots = block; // See if necessary
+    c.sets[0].slots = block;
     return hit;
 }
 
@@ -135,9 +133,9 @@ bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
     //Load
     bool hit = false;
     std::vector<Slot> block = c.sets[index].slots;
-    for (size_t i = 0; i < c.sets[index].size; i++) {
+    for (int i = 0; i < c.sets[index].size; i++) {
         if (block[i].tag == ad) { // If it's a hit
-            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+            for (int j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
                 if (block[j].timestamp < block[i].timestamp) {
                     block[j].timestamp++;
                 }
@@ -153,12 +151,12 @@ bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
 
 bool storeMemoryFull(Cache &c, uint32_t ad) {
 
-    std::map<unsigned long, unsigned long> m = c.sets[0].index;
-    std::map<unsigned long, unsigned long>::iterator it = m.find(ad); // Check if map gets updated
-    if (m.empty() || it == c.sets[0].index.end()) return false; // Store miss 
+    std::map<uint32_t, int> m = c.sets[0].index;
+    std::map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
+    if (m.empty() || it == m.end()) return false; // Store miss 
 
     std::vector<Slot> block = c.sets[0].slots;
-    for (size_t i = 0; i < c.sets[0].size; i++) {
+    for (int i = 0; i < c.sets[0].size; i++) {
         if (block[i].tag == ad) { // If it's a hit
             block[i].timestamp = 0; // Reset ts to 0
         } else {
@@ -180,23 +178,26 @@ bool dirty(Cache &c, uint32_t ad, uint32_t index, size_t n, uint32_t byte, bool 
     slot.valid = l ? true : false;
 
     std::vector<Slot> block = c.sets[index].slots;
-    for (size_t i = 0; i < c.sets[index].size; i++) {
+    for (int i = 0; i < c.sets[index].size; i++) {
         if (block[i].timestamp == n-1) toRem = i;
         if (block[i].tag == ad) { // Means it's hit
-            for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+            for (int j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
                 if (block[j].timestamp < block[i].timestamp) {
                     block[j].timestamp++;
                 }
             } 
             block[i].timestamp = 0;
+            if (!l) block[i].valid = false;
             hit = true;
             break;
         } 
     }
     if (!hit) {
-        for (size_t j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
+        for (int j = 0; j < c.sets[index].size; j++) { // Increase ts of all blocks with ts less than parameter
             if (block[j].timestamp < n-1) {
                 block[j].timestamp++;
+            } else if (block[j].timestamp == n-1) {
+                toRem = j;
             }
         } 
         if (toRem > -1 && !block[toRem].valid) c.cycles += byte/4*100;
@@ -220,32 +221,38 @@ bool dirtyFull(Cache &c, uint32_t ad, size_t n, uint32_t byte, bool l) {
     slot.timestamp = 0;
     slot.valid = l ? true : false;
 
-    std::map<unsigned long, unsigned long> temp = c.sets[0].index;
     std::vector<Slot> block = c.sets[0].slots;
-    for (size_t i = 0; i < c.sets[0].size; i++) {
-        if (block[i].timestamp == n-1) toRem = i; // Save the index of highest ts
-        if (block[i].tag == ad) { // Means it's hit
-            for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
-                if (block[j].timestamp < block[i].timestamp) {
-                    block[j].timestamp++;
-                }
-            } 
-            block[i].timestamp = 0;
-            hit = true;
-            break;
-        } 
-    }
-    if (!hit) {
-        for (size_t j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
-            if (block[j].timestamp < n-1) {
-                block[j].timestamp++;
+    std::map<uint32_t, int> temp = c.sets[0].index;
+    std::map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
+    if (!temp.empty() && it != temp.end()) {
+        toRem = it->second;
+        hit = true;
+        for (int i = 0; i < c.sets[0].size; i++) {
+            if (block[i].timestamp < block[toRem].timestamp) {
+                block[i].timestamp++;
+            }
+            else if (block[i].timestamp == block[toRem].timestamp) {
+                if (!l) block[i].valid = false;
             }
         } 
-        if (toRem > -1 && !block[toRem].valid) c.cycles += byte/4*100;
+        block[toRem].timestamp = 0;
+    } else { // Not a hit
+        for (int j = 0; j < c.sets[0].size; j++) { // Increase ts of all blocks with ts less than parameter
+            if (block[j].timestamp < n-1) {
+                block[j].timestamp++;
+            } else if (block[j].timestamp == n-1) {
+                toRem = j;
+            }
+        } 
+        if (toRem > -1) {
+            if (!block[toRem].valid) c.cycles += byte/4*100;
+            temp.erase(block[toRem].tag);
+        } 
         else if (toRem == -1) {
             toRem = c.sets[0].size;
             c.sets[0].size++;
         }
+        if (toRem >= 1024) std::cout << temp.size() << std::endl;
         block[toRem] = slot;
         temp[ad] = toRem;
         c.sets[0].index = temp;
@@ -341,7 +348,7 @@ int main(int argc, char** argv) {
     }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
     if (t == 3) {
-        std::map<unsigned long, unsigned long> map;
+        std::map<uint32_t, int> map;
         sets[0].index = map;
     }
     Cache cache;
@@ -350,6 +357,7 @@ int main(int argc, char** argv) {
     cache.write = inp5-1;
     cache.lru = inp6-1;
     cache.type = t;
+    cache.cycles = 0;
     
     unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0, cycles = 0;
     std::string op;
