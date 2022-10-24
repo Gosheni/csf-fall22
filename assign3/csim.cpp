@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 #include <exception>
-#include <map>
+#include <unordered_map>
 
 struct Slot {
     uint32_t tag;
@@ -14,7 +14,7 @@ struct Slot {
 
 struct Set {
     std::vector<Slot> slots;
-    std::map<uint32_t, int> index; //map of tag to index of slot
+    std::unordered_map<uint32_t, int> index; //map of tag to index of slot
     int size;
 };
 
@@ -92,8 +92,8 @@ bool callLoadFull(Cache &c, uint32_t ad, size_t n) {
     slot.valid = true;
 
     std::vector<Slot> block = c.sets[0].slots;
-    std::map<uint32_t, int> temp = c.sets[0].index;
-    std::map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
+    std::unordered_map<uint32_t, int> temp = c.sets[0].index;
+    std::unordered_map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
     if (!temp.empty() && it != temp.end()) {
         toRem = it->second;
         hit = true;
@@ -151,8 +151,8 @@ bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
 
 bool storeMemoryFull(Cache &c, uint32_t ad) {
 
-    std::map<uint32_t, int> m = c.sets[0].index;
-    std::map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
+    std::unordered_map<uint32_t, int> m = c.sets[0].index;
+    std::unordered_map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
     if (m.empty() || it == m.end()) return false; // Store miss 
 
     std::vector<Slot> block = c.sets[0].slots;
@@ -222,8 +222,8 @@ bool dirtyFull(Cache &c, uint32_t ad, size_t n, uint32_t byte, bool l) {
     slot.valid = l ? true : false;
 
     std::vector<Slot> block = c.sets[0].slots;
-    std::map<uint32_t, int> temp = c.sets[0].index;
-    std::map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
+    std::unordered_map<uint32_t, int> temp = c.sets[0].index;
+    std::unordered_map<uint32_t, int>::iterator it = temp.find(ad); // Check if map gets updated
     if (!temp.empty() && it != temp.end()) {
         toRem = it->second;
         hit = true;
@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
     }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
     if (t == 3) {
-        std::map<uint32_t, int> map;
+        std::unordered_map<uint32_t, int> map;
         sets[0].index = map;
     }
     Cache cache;
