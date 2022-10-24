@@ -33,6 +33,10 @@ namespace Csim
         index = *m;
     }
 
+    void Set::resetSize() {
+        size = 0;
+    }
+
     unsigned long Set::sizeOfSlots() {
         return size;
     }

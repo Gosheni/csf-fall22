@@ -24,6 +24,8 @@ namespace Csim
 
         void setMap(std::map<unsigned long, unsigned long>* m);
 
+        void resetSize();
+
         unsigned long sizeOfSlots();
 
         void incSize();

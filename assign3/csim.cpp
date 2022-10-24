@@ -88,10 +88,16 @@ int main(int argc, char** argv) {
     std::vector<Csim::Set> sets(inp1);
     for (int i = 0; i < inp1; i++) { // Fill with empty pre-sized Sets of empty pre-sized Slots
         std::vector<Csim::Slot> slots(inp2);
-        Csim::Set s(&slots);
+        Csim::Set s;
+        s.setSlots(&slots);
+        s.resetSize();
         sets[i] = s;
     }
     int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
+    if (t == 3) {
+        std::map<unsigned long, unsigned long> map;
+        sets[0].setMap(&map);
+    }
     Csim::Cache cache(&sets, inp4-1, inp5-1, inp6-1, t);
     
     unsigned long load = 0, store = 0, loadHit = 0, loadMiss = 0, storeHit = 0, storeMiss = 0, cycles = 0;
@@ -116,7 +122,7 @@ int main(int argc, char** argv) {
             if (inp4 == 1 && inp5 == 2) { // No-write-allocate & write-through
                 if (op == "l") { // Load
                     if (t == 3) { // Full-associative
-                        if (cache.callLoadFull(ad, (size_t)inp2, true)) {
+                        if (cache.callLoadFull(ad, (size_t)inp2)) {
                             loadHit++;
                             cycles++;
                         } else {
@@ -124,7 +130,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (cache.callLoad(ad, index, (size_t)inp2, true)) { // Others
+                        if (cache.callLoad(ad, index, (size_t)inp2)) { // Others
                             loadHit++;
                             cycles++;
                         } else {
@@ -134,8 +140,8 @@ int main(int argc, char** argv) {
                     }
                     load++;
                 } else { // Store
-                    if (t == 3) cache.storeMemoryFull(ad, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Full-associative
-                    else cache.storeMemory(ad, index, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Others
+                    if (t == 3) cache.storeMemoryFull(ad) ? storeHit++ : storeMiss++; //Full-associative
+                    else cache.storeMemory(ad, index) ? storeHit++ : storeMiss++; //Others
                     store++;
                     cycles += 100;
                 }
@@ -143,7 +149,7 @@ int main(int argc, char** argv) {
             if (inp4 == 2 && inp5 == 2) { // write-allocate & write-through
                 if (op == "l") { // Load
                     if (t == 3) { // Full-associative
-                        if (cache.callLoadFull(ad, (size_t)inp2, true)) {
+                        if (cache.callLoadFull(ad, (size_t)inp2)) {
                             loadHit++;
                             cycles++;
                         } else {
@@ -151,7 +157,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100;
                         }
                     } else {
-                        if (cache.callLoad(ad, index, (size_t)inp2, true)) { // Others
+                        if (cache.callLoad(ad, index, (size_t)inp2)) { // Others
                             loadHit++;
                             cycles++;
                         } else {
@@ -162,7 +168,7 @@ int main(int argc, char** argv) {
                     load++;
                 } else { // Store
                     if (t == 3) { // Full-associative
-                        if (cache.callStoreFull(ad, (size_t)inp2, true)) {
+                        if (cache.callStoreFull(ad, (size_t)inp2)) {
                             storeHit++;
                             cycles += 100;
                         } else {
@@ -170,7 +176,7 @@ int main(int argc, char** argv) {
                             cycles += inp3/4*100 + 100;
                         }
                     } else {
-                        if (cache.callStore(ad, index, (size_t)inp2, true)) { // Others
+                        if (cache.callStore(ad, index, (size_t)inp2)) { // Others
                             storeHit++;
                             cycles += 100;
                         } else {
@@ -183,12 +189,44 @@ int main(int argc, char** argv) {
             }
             if (inp4 == 2 && inp5 == 1) { // write-allocate & write-back
                 if (op == "l") { // Load
-                    if (t == 3) cache.callLoadFull(ad, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Full-associative
-                    else cache.callLoad(ad, index, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Others
+                    bool l = true;
+                    if (t == 3) { // Full-associative
+                        if (cache.dirtyFull(ad, (size_t)inp2, inp3, l)) {
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    } else {
+                        if (cache.dirty(ad, index, (size_t)inp2, inp3, l)) { // Others
+                            loadHit++;
+                            cycles++;
+                        } else {
+                            loadMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    }
                     load++;
                 } else { // Store
-                    if (t == 3) cache.callStoreFull(ad, (size_t)inp2, true) ? loadHit++ : loadMiss++; //Full-associative
-                    cache.callStore(ad, index, (size_t)inp2, true) ? storeHit++ : storeMiss++; //Others
+                    bool l = false;
+                    if (t == 3) { // Full-associative
+                        if (cache.dirtyFull(ad, (size_t)inp2, inp3, l)) {
+                            storeHit++;
+                            cycles++;
+                        } else {
+                            storeMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    } else {
+                        if (cache.dirty(ad, index, (size_t)inp2, inp3, l)) { // Others
+                            storeHit++;
+                            cycles++;
+                        } else {
+                            storeMiss++;
+                            cycles += inp3/4*100;
+                        }
+                    }
                     store++;
                 }
             }
@@ -200,7 +238,7 @@ int main(int argc, char** argv) {
     std::cout << "Load misses: " << loadMiss << std::endl;
     std::cout << "Store hits: " << storeHit << std::endl;
     std::cout << "Store misses: " << storeMiss << std::endl;
-    std::cout << "Total cycles: " << cycles << std::endl;
+    std::cout << "Total cycles: " << cycles + cache.getCycles() << std::endl;
     return 0;
 }
 
