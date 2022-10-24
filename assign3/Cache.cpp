@@ -64,8 +64,7 @@ namespace Csim
 
     bool Cache::callStore(uint32_t ad, uint32_t index, size_t n) {
       //Load
-      callLoad(ad, index, n);
-      return 0;
+      return callLoad(ad, index, n);
     }
 
     bool Cache::callLoadFull(uint32_t ad, size_t n) {
@@ -104,8 +103,7 @@ namespace Csim
 
     bool Cache::callStoreFull(uint32_t ad, size_t n) {
       //Load
-      callLoadFull(ad, n);
-      return 0;
+      return callLoadFull(ad, n);
     }
 
     bool Cache::storeMemory(uint32_t ad, uint32_t index) {
