@@ -148,9 +148,8 @@ bool storeMemory(Cache &c, uint32_t ad, uint32_t index) {
 
 bool storeMemoryFull(Cache &c, uint32_t ad) {
 
-    std::map<uint32_t, int> m = c.sets[0].index;
-    std::map<uint32_t, int>::iterator it = m.find(ad); // Check if map gets updated
-    if (m.empty() || it == m.end()) return false; // Store miss 
+    auto it = c.sets[0].index.find(ad); // Check if map gets updated
+    if (it == c.sets[0].index.end()) return false; // Store miss 
 
     std::vector<Slot> block = c.sets[0].slots;
     for (int i = 0; i < c.sets[0].size; i++) {
