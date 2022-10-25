@@ -152,10 +152,11 @@ bool storeMemoryFull(Cache &c, uint32_t ad) {
     if (it == c.sets[0].index.end()) return false; // Store miss 
 
     std::vector<Slot> block = c.sets[0].slots;
+    unsigned long max = block[it->second].timestamp;
     for (int i = 0; i < c.sets[0].size; i++) {
         if (block[i].tag == ad) { // If it's a hit
             block[i].timestamp = 0; // Reset ts to 0
-        } else {
+        } else if (block[i].timestamp < max) {
             block[i].timestamp++; // Else inc ts
         }
     }
