@@ -75,7 +75,7 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
         if(c.type == 3 && toRem > -1){ //Full-associative and found n-1
             c.sets[0].index.erase(block[toRem].tag);
         }
-        if(dirty && toRem > 1 && !block[toRem].valid) c.cycles += c.byte/4*100;
+        if(toRem > 1 && !block[toRem].valid) c.cycles += c.byte/4*100;
         else if(toRem == -1) { //If not found and can increase size
             toRem = c.sets[ind].size;
             c.sets[ind].size++;
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
         uint32_t index = ad % inp1; // Get index
         ad >>= logTwo(inp1); // Get the rest which is the tag
         
-        bool dirty = (op == "s" && inp5 == 1); //store and write-allocate
+        bool dirty = (op == "s" && inp5 == 1); //store and write-back
         bool hit = loadStore(cache, ad, index, (size_t)inp2, dirty, op == "s");
         if(op == "l"){ //Load
             if(hit){
