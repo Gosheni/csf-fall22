@@ -25,14 +25,6 @@ struct Cache {
     unsigned long cycles;
 };
 
-void updateTs(Cache &c, uint32_t max, uint32_t index) {
-    for (int j = 0; j < c.sets[index].size; j++) {
-        if (c.sets[index].slots[j].timestamp < max) {
-            c.sets[index].slots[j].timestamp++;
-        }
-    }
-}
-
 bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool store){
     bool hit = false;
     int toRem = -1;
@@ -40,18 +32,18 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
     //Initializing slot
     Slot slot; 
     slot.tag = ad;
-    slot.valid = dirty ? false : true;
+    slot.valid = !dirty;
 
     std::vector<Slot> block = c.sets[ind].slots;
-    if(c.type == 3){ //Full-associative
+    if (c.type == 3) { //Full-associative
         auto it = c.sets[0].index.find(ad);
         if (it != c.sets[0].index.end()) { //hit
             toRem = it->second;
             hit = true;
-        }else{ //miss
-            //Find n-1
+        } else { //miss
+            //Find n-1 (See if set is full)
             for (int i = 0; i < c.sets[0].size; i++) {
-                if (block[i].timestamp == n-1){
+                if (block[i].timestamp == n-1) {
                     toRem = i;
                     break;
                 }
@@ -59,7 +51,9 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
         }
     } else { //Direct or Set-associative
         for (int i = 0; i < c.sets[ind].size; i++) {
-            if (block[i].timestamp == n-1) toRem = i;
+            if (block[i].timestamp == n-1) { //Save index, if n-1 found
+                toRem = i;
+            }
             if (block[i].tag == ad) { //hit
                 toRem = i;
                 hit = true;
@@ -67,22 +61,22 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
             }
         }
     }
-    
+
     if (!hit) {
-        if(store && !c.allocate && c.write){ // no-allocate & write-through
+        if (store && !c.allocate && c.write) { // store & no-allocate & write-through
             return false;
         }
-        if(c.type == 3 && toRem > -1){ //Full-associative and found n-1
+        if (c.type == 3 && toRem > -1) { //Full-associative and found n-1
             c.sets[0].index.erase(block[toRem].tag);
         }
-        if(toRem > -1 && !block[toRem].valid) c.cycles += c.byte/4*100;
-        else if(toRem == -1) { //If not found and can increase size
+        if (toRem > -1 && !block[toRem].valid) c.cycles += c.byte/4*100;
+        else if(toRem == -1) { //If not found, then can increase size
             toRem = c.sets[ind].size;
             c.sets[ind].size++;
             slot.timestamp = n-1;
             block[toRem] = slot;
         }
-        if(c.type == 3){ //Full-associative
+        if (c.type == 3) { //Full-associative
             c.sets[0].index[ad] = toRem;
         }
     } 
@@ -187,11 +181,13 @@ int main(int argc, char** argv) {
         s.size = 0;
         sets[i] = s;
     }
-    int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2);
-    if (t == 3) {
+    int t = inp2 == 1 ? 1 : (inp1 == 1 ? 3 : 2); //Set type of cache
+    if (t == 3) { // Full-associative map initialization
         std::map<uint32_t, int> map;
         sets[0].index = map;
     }
+
+    //Initialize cache
     Cache cache;
     cache.sets = sets;
     cache.byte = inp3;
@@ -209,10 +205,7 @@ int main(int argc, char** argv) {
     while (std::cin >> op) {
 
         std::cin >> std::hex >> ad;
-        std::cin >> dummy;
-
-        // std::cout << op << " - " << std::stol(address, 0 ,16) << std::endl;
-        // uint32_t = stol(address, 0 ,16);
+        std::cin >> dummy; //Unused third argument
 
         ad >>= logTwo(inp3); // Get rid of the offset
         uint32_t index = ad % inp1; // Get index
@@ -220,32 +213,27 @@ int main(int argc, char** argv) {
         
         bool dirty = (op == "s" && inp5 == 1); //store and write-back
         bool hit = loadStore(cache, ad, index, (size_t)inp2, dirty, op == "s");
-        if(op == "l"){ //Load
-            if(hit){
+
+        if (op == "l") { //Load
+            if (hit) {
                 loadHit++;
                 cycles++;
-            }else{
+            } else {
                 loadMiss++;
                 cycles += inp3/4*100;
             }
             load++;
-        }else{ //Store
-            if(hit){
-                storeHit++;
-            }else{
-                storeMiss++;
-            }
-            if(inp5 == 2){ //write-through
+        } else { //Store
+            if (hit) storeHit++;
+            else storeMiss++;
+            if (inp5 == 2) { //write-through
                 cycles += 100;
-                if(inp4 == 2 && !hit){ //write-allocate and miss
-                    cycles += inp3/4*100;
+                if (inp4 == 2 && !hit) { //write-allocate and miss
+                    cycles += inp3/4*100; 
                 }
-            }else{ //write-back
-                if(hit){ 
-                    cycles++;
-                }else{
-                    cycles += inp3/4*100;
-                }
+            } else { //write-back
+                if (hit) cycles++;
+                else cycles += inp3/4*100;
             }
             store++;
         }
