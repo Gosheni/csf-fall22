@@ -57,7 +57,7 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
                 }
             }
         }
-    }else{ //Direct or Set-associative
+    } else { //Direct or Set-associative
         for (int i = 0; i < c.sets[ind].size; i++) {
             if (block[i].timestamp == n-1) toRem = i;
             if (block[i].tag == ad) { //hit
@@ -69,7 +69,7 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
     }
     
     if (!hit) {
-        if(store && !c.allocate && c.write){
+        if(store && !c.allocate && c.write){ // no-allocate & write-through
             return hit;
         }
         if(c.type == 3 && toRem > -1){ //Full-associative and found n-1
@@ -80,8 +80,8 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
             toRem = c.sets[ind].size;
             c.sets[ind].size++;
             slot.timestamp = n-1;
-            block[toRem] = slot;
         }
+        block[toRem] = slot;
         if(c.type == 3){ //Full-associative
             c.sets[0].index[ad] = toRem;
         }
@@ -94,12 +94,11 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
                 block[i].timestamp++;
             }
         }
-        //Set slot and set
+        //Set slot and assign
         slot.timestamp = 0;
         block[toRem] = slot;
         c.sets[ind].slots = block;
     }
-    
     return hit;
 }
 
