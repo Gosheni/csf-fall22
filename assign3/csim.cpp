@@ -70,35 +70,33 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
     
     if (!hit) {
         if(store && !c.allocate && c.write){ // no-allocate & write-through
-            return hit;
+            return false;
         }
         if(c.type == 3 && toRem > -1){ //Full-associative and found n-1
             c.sets[0].index.erase(block[toRem].tag);
         }
-        if(toRem > 1 && !block[toRem].valid) c.cycles += c.byte/4*100;
+        if(toRem > -1 && !block[toRem].valid) c.cycles += c.byte/4*100;
         else if(toRem == -1) { //If not found and can increase size
             toRem = c.sets[ind].size;
             c.sets[ind].size++;
             slot.timestamp = n-1;
+            block[toRem] = slot;
         }
-        block[toRem] = slot;
         if(c.type == 3){ //Full-associative
             c.sets[0].index[ad] = toRem;
         }
-    }
+    } 
     
-    if(c.lru || !hit){
-        // Increase ts of all blocks with ts less than parameter
-        for (int i = 0; i < c.sets[ind].size; i++) {
-            if (block[i].timestamp < block[toRem].timestamp) {
-                block[i].timestamp++;
-            }
+    // Increase ts of all blocks with ts less than parameter
+    for (int i = 0; i < c.sets[ind].size; i++) {
+        if (block[i].timestamp < block[toRem].timestamp) {
+            block[i].timestamp++;
         }
-        //Set slot and assign
-        slot.timestamp = 0;
-        block[toRem] = slot;
-        c.sets[ind].slots = block;
     }
+    //Set slot and assign
+    slot.timestamp = 0;
+    block[toRem] = slot;
+    c.sets[ind].slots = block;
     return hit;
 }
 
