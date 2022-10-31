@@ -87,16 +87,18 @@ bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool s
         }
     } 
     
-    // Increase ts of all blocks with ts less than parameter
-    for (int i = 0; i < c.sets[ind].size; i++) {
-        if (block[i].timestamp < block[toRem].timestamp) {
-            block[i].timestamp++;
+    if (c.lru || !hit) {
+        // Increase ts of all blocks with ts less than parameter
+        for (int i = 0; i < c.sets[ind].size; i++) {
+            if (block[i].timestamp < block[toRem].timestamp) {
+                block[i].timestamp++;
+            }
         }
+        //Set slot and assign
+        slot.timestamp = 0;
+        block[toRem] = slot;
+        c.sets[ind].slots = block;
     }
-    //Set slot and assign
-    slot.timestamp = 0;
-    block[toRem] = slot;
-    c.sets[ind].slots = block;
     return hit;
 }
 
