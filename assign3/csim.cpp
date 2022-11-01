@@ -2,28 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
-
-struct Slot {
-    uint32_t tag;
-    bool valid;
-    unsigned long timestamp;
-};
-
-struct Set {
-    std::vector<Slot> slots;
-    std::map<uint32_t, int> index; //map of tag to index of slot
-    int size;
-};
-
-struct Cache {
-    std::vector<Set> sets;
-    uint32_t byte;
-    bool allocate;
-    bool write;
-    bool lru;
-    int type; // 1 -> Direct, 2 -> Set, 3 -> Full 
-    unsigned long cycles;
-};
+#include "csim.hpp"
 
 bool loadStore(Cache &c, uint32_t ad, uint32_t ind, size_t n, bool dirty, bool store){
     bool hit = false;
