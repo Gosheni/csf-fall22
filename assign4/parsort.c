@@ -15,9 +15,9 @@ void merge(int64_t *arr, size_t begin, size_t mid, size_t end, int64_t *temparr)
   int n1 = mid - begin + 1;
   int n2 = end - mid;
 
-  for (int i = 0; i < n1; i++)
+  for (int i = 0; i < n1; ++i)
     temparr[i] = arr[begin + i];
-  for (int j = 0; j < n2; j++)
+  for (int j = 0; j < n2; ++j)
     temparr[n1 + j] = arr[mid + 1 + j];
 
   // Maintain current index of sub-arrays and main array
@@ -26,7 +26,8 @@ void merge(int64_t *arr, size_t begin, size_t mid, size_t end, int64_t *temparr)
   // Until we reach the end of either left or right of temparr, pick larger among the two elements and place them in arr
   while (i < n1 && j < n2) {
     if (temparr[i] <= temparr[n1 + j]) {
-      arr[k] = temparr[i++];
+      arr[k] = temparr[i];
+      i++;
     } else {
       arr[k] = temparr[n1 + j];
       j++;
@@ -36,11 +37,14 @@ void merge(int64_t *arr, size_t begin, size_t mid, size_t end, int64_t *temparr)
 
   // When we run out of elements in either left or right of temparr, pick up the remaining elements and put in arr
   while (i < n1) {
-    arr[k++] = temparr[i++];
+    arr[k] = temparr[i];
+    i++;
+    k++;
   }
   while (j < n2) {
-    arr[k++] = temparr[n1 + j];
+    arr[k] = temparr[n1 + j];
     j++;
+    k++;
   }
 }
 
@@ -53,13 +57,16 @@ int cmpfunc(const void * a, const void * b) {
 }
 
 void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
-  size_t size = end-begin;
+  size_t size = end-begin+1;
   if (size <= threshold) {
     qsort(arr+begin, size, sizeof(int64_t), cmpfunc);
-  } else if (begin <= end) {
+  } else if (begin < end) {
     // Same as (l+r)/2, but avoids overflow for
     // large l and h
-    int m = (begin + end) / 2;
+    int m = begin + (end - begin) / 2;
+
+    merge_sort(arr, begin, m, threshold);
+    merge_sort(arr, m+1, end, threshold);
  
     // Sort first and second halves
     pid_t pid = fork();
@@ -71,6 +78,17 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
       merge_sort(arr, begin, m, threshold);
       exit(0);
     }
+
+    pid_t pid2 = fork();
+    if (pid2 == -1) {
+      fprintf(stderr, "Error2: Fork failed to start a new process\n");
+      //Error
+      exit(1);
+    } else if (pid2 == 0) {
+      merge_sort(arr, m + 1, end, threshold);
+      exit(0);
+    }
+
     int wstatus;
     pid_t actual_pid = waitpid(pid, &wstatus, 0);
     if (actual_pid == -1) {
@@ -87,16 +105,6 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
       fprintf(stderr, "Error: Subprocess returned a non-zero exit code\n");
       //Error
       exit(1);
-    }
-
-    pid_t pid2 = fork();
-    if (pid2 == -1) {
-      fprintf(stderr, "Error2: Fork failed to start a new process\n");
-      //Error
-      exit(1);
-    } else if (pid2 == 0) {
-      merge_sort(arr, m + 1, end, threshold);
-      exit(0);
     }
     int wstatus2;
     pid_t actual_pid2 = waitpid(pid2, &wstatus2, 0);
@@ -116,7 +124,7 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
       exit(1);
     }
  
-    int64_t *temparr = malloc(sizeof *temparr);
+    int64_t *temparr = malloc((end-begin+1)*sizeof(int64_t));
     merge(arr, begin, m, end, temparr);
     free(temparr);
   }
