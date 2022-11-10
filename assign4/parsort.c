@@ -10,6 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+void error(char *msg){
+  fprintf(stderr, "%s\n", msg);
+  exit(EXIT_FAILURE);
+}
+
 void merge(int64_t *arr, size_t begin, size_t mid, size_t end, int64_t *temparr) {
   // Create temparr[0..n1] ← A[p..q] and temparr[n1..n1+n2] M ← A[q+1..r]
   int n1 = mid - begin;
@@ -71,54 +76,54 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
     // Sort first and second halves
     pid_t pid = fork();
     if (pid == -1) {
-      fprintf(stderr, "Error: Fork failed to start a new process\n");
+      error("Error: Fork 1 failed to start a new process\n");
       //Error
-      exit(1);
+      exit(EXIT_FAILURE);
     } else if (pid == 0) {
       merge_sort(arr, begin, m, threshold);
-      exit(0);
+      exit(EXIT_SUCCESS);
     }
     pid_t pid2 = fork();
     if (pid2 == -1) {
-      fprintf(stderr, "Error2: Fork failed to start a new process\n");
+      error("Error: Fork 2 failed to start a new process\n");
       //Error
-      exit(1);
+      exit(EXIT_FAILURE);
     } else if (pid2 == 0) {
       merge_sort(arr, m, end, threshold);
-      exit(0);
+      exit(EXIT_SUCCESS);
     }
 
     int wstatus;
     pid_t actual_pid = waitpid(pid, &wstatus, 0);
     if (actual_pid == -1) {
-      fprintf(stderr, "Error: Waitpid failure\n");
+      error("Error: Waitpid failure\n");
       //Error
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     if (!WIFEXITED(wstatus)) {
-      fprintf(stderr, "Error: Subprocess crashed, was interrupted, or didn't exit normally\n");
+      error("Error: Subprocess crashed, was interrupted, or didn't exit normally\n");
       //Error
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     if (WEXITSTATUS(wstatus) != 0) {
-      fprintf(stderr, "Error: Subprocess returned a non-zero exit code\n");
+      error("Error: Subprocess returned a non-zero exit code\n");
       //Error
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     int wstatus2;
     pid_t actual_pid2 = waitpid(pid2, &wstatus2, 0);
     if (actual_pid2 == -1) {
-      fprintf(stderr, "Error2: Waitpid failure\n");
+      error("Error: Waitpid 2 failure\n");
       //Error
       exit(1);
     }
     if (!WIFEXITED(wstatus2)) {
-      fprintf(stderr, "Error2: Subprocess crashed, was interrupted, or didn't exit normally\n");
+      error("Error: Subprocess 2 crashed, was interrupted, or didn't exit normally\n");
       //Error
       exit(1);
     }
     if (WEXITSTATUS(wstatus2) != 0) {
-      fprintf(stderr, "Error2: Subprocess returned a non-zero exit code\n");
+      error("Error: Subprocess 2 returned a non-zero exit code\n");
       //Error
       exit(1);
     }
@@ -142,8 +147,7 @@ int main(int argc, char **argv) {
   size_t threshold = (size_t) strtoul(argv[2], &end, 10);
   if (end != argv[2] + strlen(argv[2])){
     /* TODO: report an error (threshold value is invalid) */;
-    fprintf(stderr, "Error: threshold value is invalid\n");
-    return -1;
+    error("Error: threshold value is invalid\n");
   }
 
   // TODO: open the file
@@ -151,7 +155,7 @@ int main(int argc, char **argv) {
   if (fd < 0) {
     // file couldn't be opened: handle error and exit
     fprintf(stderr, "Error: file couldn't be opened\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   // TODO: use fstat to determine the size of the file
@@ -160,7 +164,7 @@ int main(int argc, char **argv) {
   if (rc != 0) {
     // handle fstat error and exit
     fprintf(stderr, "Error: fstat cannot determine size of file\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
   size_t file_size_in_bytes = statbuf.st_size;
 
@@ -169,7 +173,7 @@ int main(int argc, char **argv) {
   if (data == MAP_FAILED) {
     // handle mmap error and exit
     fprintf(stderr, "Error: fail to mmap the file data\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   // TODO: sort the data!
@@ -181,9 +185,9 @@ int main(int argc, char **argv) {
   if(unmapSuccess != 0 || closeSuccess != 0){
     //handle unmap & close error and exit
     fprintf(stderr, "Error: fail to handle unmap and close\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   // TODO: exit with a 0 exit code if sort was successful
-  return 0;
+  exit(EXIT_SUCCESS);
 }
