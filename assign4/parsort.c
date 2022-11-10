@@ -78,6 +78,16 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
       merge_sort(arr, begin, m, threshold);
       exit(0);
     }
+    pid_t pid2 = fork();
+    if (pid2 == -1) {
+      fprintf(stderr, "Error2: Fork failed to start a new process\n");
+      //Error
+      exit(1);
+    } else if (pid2 == 0) {
+      merge_sort(arr, m, end, threshold);
+      exit(0);
+    }
+
     int wstatus;
     pid_t actual_pid = waitpid(pid, &wstatus, 0);
     if (actual_pid == -1) {
@@ -94,16 +104,6 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
       fprintf(stderr, "Error: Subprocess returned a non-zero exit code\n");
       //Error
       exit(1);
-    }
-
-    pid_t pid2 = fork();
-    if (pid2 == -1) {
-      fprintf(stderr, "Error2: Fork failed to start a new process\n");
-      //Error
-      exit(1);
-    } else if (pid2 == 0) {
-      merge_sort(arr, m, end, threshold);
-      exit(0);
     }
     int wstatus2;
     pid_t actual_pid2 = waitpid(pid2, &wstatus2, 0);
