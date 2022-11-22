@@ -22,11 +22,35 @@ int main(int argc, char **argv) {
   username = argv[3];
 
   // TODO: connect to server
+  Connection conn;
+  conn.connect(server_hostname, server_port);
 
   // TODO: send slogin message
+  Message msg;
+  msg.tag = TAG_SLOGIN;
+  msg.data = username;
+  conn.send(msg);
+
+  Message msg;
+  conn.receive(msg);
+  if (msg.tag == TAG_ERR) {
+    std::cout << msg.data << std::endl;
+    return 1;
+  }
 
   // TODO: loop reading commands from user, sending messages to
   //       server as appropriate
+  while (conn.is_open()) {
+    std::string m;
+    std::cin >> m;
+    int index = m.find(":");
+    
+    Message msg;
+    msg.tag = m.substr(0, index);
+    msg.data = m.substr(index+1);
+
+    if (msg.tag == TAG_QUIT) break;
+  }
 
   return 0;
 }
