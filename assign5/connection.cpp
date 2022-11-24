@@ -19,11 +19,11 @@ Connection::Connection(int fd)
 
 void Connection::connect(const std::string &hostname, int port) {
   // TODO: call open_clientfd to connect to the server
-  char* buffer;
+  char buffer[256];
   sprintf(buffer, "%d", port);
   m_fd = open_clientfd(hostname.c_str(), buffer);
   // TODO: call rio_readinitb to initialize the rio_t object
-  Rio_readinitb(&m_fdbuf, m_fd);
+  rio_readinitb(&m_fdbuf, m_fd);
 }
 
 Connection::~Connection() {
@@ -49,8 +49,10 @@ bool Connection::send(const Message &msg) {
   std::string n = msg.data;
   if (rio_writen(m_fd, m_fdbuf.rio_bufptr, n.length()) != (int)n.length()) {
     m_last_result = EOF_OR_ERROR;
+    return false;
   } else {
     m_last_result = SUCCESS;
+    return true;
   }
 }
 
@@ -62,9 +64,11 @@ bool Connection::receive(Message &msg) {
     m_last_result = EOF_OR_ERROR;
     msg.data = m_fdbuf.rio_buf;
     msg.tag = TAG_ERR;
+    return false;
   } else {
     m_last_result = SUCCESS;
     msg.data = m_fdbuf.rio_buf;
     msg.tag = TAG_OK;
+    return true;
   }
 }
