@@ -31,10 +31,10 @@ int main(int argc, char **argv) {
   msg.data = username;
   conn.send(msg);
 
-  Message msg;
-  conn.receive(msg);
-  if (msg.tag == TAG_ERR) {
-    std::cout << msg.data << std::endl;
+  Message msg2;
+  conn.receive(msg2);
+  if (msg2.tag == TAG_ERR) {
+    std::cout << msg2.tag << ":" << msg2.data << std::endl;
     return 1;
   }
 

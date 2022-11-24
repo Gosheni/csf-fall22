@@ -30,22 +30,22 @@ int main(int argc, char **argv) {
   msg.data = username;
   conn.send(msg);
 
-  Message msg;
-  conn.receive(msg);
-  if (msg.tag == TAG_ERR) {
-    std::cout << msg.data << std::endl;
+  Message msg2;
+  conn.receive(msg2);
+  if (msg2.tag == TAG_ERR) {
+    std::cout << msg2.tag << ":" << msg2.data << std::endl;
     return 1;
   } 
 
-  Message msg;
-  msg.tag = TAG_JOIN;
-  msg.data = room_name;
-  conn.send(msg);
+  Message msg3;
+  msg3.tag = TAG_JOIN;
+  msg3.data = room_name;
+  conn.send(msg3);
 
-  Message msg;
-  conn.receive(msg);
-  if (msg.tag == TAG_ERR) {
-    std::cout << msg.data << std::endl;
+  Message msg4;
+  conn.receive(msg4);
+  if (msg4.tag == TAG_ERR) {
+    std::cout << msg4.tag << ":" << msg4.data << std::endl;
     return 1;
   }
 
@@ -62,11 +62,11 @@ int main(int argc, char **argv) {
 
     if (msg.tag == TAG_QUIT) break;
 
-    Message msg;
-    conn.receive(msg);
-    std::cout << msg.data << std::endl;
-    if (msg.tag != TAG_DELIVERY) return 1;
-    
+    Message msg2;
+    conn.receive(msg2);
+    std::cout << msg2.data << std::endl;
+    if (msg2.tag != TAG_DELIVERY) return 1;
+
   }
 
   return 0;

@@ -19,9 +19,11 @@ Connection::Connection(int fd)
 
 void Connection::connect(const std::string &hostname, int port) {
   // TODO: call open_clientfd to connect to the server
-  m_fd = open_clientfd(&hostname.at(0), (const char*)port);
+  char* buffer;
+  sprintf(buffer, "%d", port);
+  m_fd = open_clientfd(hostname.c_str(), buffer);
   // TODO: call rio_readinitb to initialize the rio_t object
-  rio_readinitb(&m_fdbuf, m_fd);
+  Rio_readinitb(&m_fdbuf, m_fd);
 }
 
 Connection::~Connection() {
