@@ -29,12 +29,16 @@ int main(int argc, char **argv) {
   Message msg;
   msg.tag = TAG_SLOGIN;
   msg.data = username;
-  conn.send(msg);
+  if (!conn.send(msg)) {
+    std::cout << msg.tag << ":" << msg.data << std::endl;
+    std::cerr << "Error connecting to server\n";
+    return 1;
+  }
 
   Message msg2;
-  conn.receive(msg2);
-  if (msg2.tag == TAG_ERR) {
+  if (!conn.receive(msg2)) {
     std::cout << msg2.tag << ":" << msg2.data << std::endl;
+    std::cerr << "Error connecting to server\n";
     return 1;
   }
 
