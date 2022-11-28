@@ -35,6 +35,8 @@ int main(int argc, char **argv) {
   //       server as appropriate
   try {  
     Message msg;
+    msg.tag = TAG_SLOGIN;
+    msg.data = username;
     send(conn, msg);
     receive(conn, msg, true);
 

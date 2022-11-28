@@ -35,8 +35,13 @@ int main(int argc, char **argv) {
   
   try {  
     Message msg;
+    msg.tag = TAG_RLOGIN;
+    msg.data = username;
     send(conn, msg);
     receive(conn, msg, true);
+
+    msg.tag = TAG_JOIN;
+    msg.data = room_name;
     send(conn, msg);
     receive(conn, msg, true);
 
