@@ -40,10 +40,6 @@ int main(int argc, char **argv) {
     send(conn, msg);
     receive(conn, msg, true);
 
-    if (msg.tag == TAG_ERR) {
-      std::cerr << "Error\n";
-    }
-
     for (;;) {
       std::cout << "> ";
       std::cout.flush();
@@ -70,10 +66,6 @@ int main(int argc, char **argv) {
       }
       send(conn, msg2);
       receive(conn, msg2, true);
-
-      if (msg2.tag == TAG_ERR) {
-        std::cerr << "Error\n";
-      }
     } 
   } catch (const std::runtime_error &ex) {
     std::cerr << "Error\n";

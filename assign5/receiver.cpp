@@ -40,27 +40,14 @@ int main(int argc, char **argv) {
     send(conn, msg);
     receive(conn, msg, true);
 
-    if (msg.tag == TAG_ERR) {
-      std::cerr << "Error\n";
-    }
-
     msg.tag = TAG_JOIN;
     msg.data = room_name;
     send(conn, msg);
     receive(conn, msg, true);
 
-    if (msg.tag == TAG_ERR) {
-      std::cerr << "Error\n";
-    }
-
     for (;;) {
       Message msg2;
       receive(conn, msg2, true);
-      if (msg2.tag != TAG_DELIVERY) {
-        std::cout << msg.data << std::endl;
-        std::cerr << "Error\n";
-        break;
-      } 
       if (msg2.split_c().size() != 3) {
         std::cerr << "Other Error\n";
         break;
