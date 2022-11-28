@@ -35,8 +35,8 @@ struct Message {
   }
 
   bool is_lowercase() {
-    for (size_t i = 0; i < data.length(); i++) 
-      if (isupper(data[i])) return false;
+    for (size_t i = 0; i < tag.length(); i++) 
+      if (!islower(tag[i])) return false;
     return true;
   }
 };

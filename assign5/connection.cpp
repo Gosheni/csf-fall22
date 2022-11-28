@@ -40,8 +40,10 @@ bool Connection::is_open() const {
 
 void Connection::close() {
   // TODO: close the connection if it is open
-  if (is_open()) close();
-  m_fd = -1;
+  if (is_open()) {
+    Close(m_fd);
+    m_fd = -1;
+  }
 }
 
 bool Connection::send(const Message &msg) {
@@ -76,15 +78,15 @@ bool Connection::receive(Message &msg) {
   auto index = str.find(":");
   if (index == std::string::npos) {
     m_last_result = INVALID_MSG;
-    return true;
+    return false;
   }
 
   msg.tag = str.substr(0, index);
   msg.data = str.substr(index+1);
 
-  if (msg.data.empty() || msg.is_lowercase()) {
+  if (!msg.is_lowercase()) {
     m_last_result = INVALID_MSG;
-    return true;
+    return false;
   }
 
   m_last_result = SUCCESS;

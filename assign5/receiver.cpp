@@ -46,19 +46,24 @@ int main(int argc, char **argv) {
     receive(conn, msg, true);
 
     for (;;) {
-      receive(conn, msg, true);
-      if (msg.tag != TAG_DELIVERY) {
+      Message msg2;
+      receive(conn, msg2, true);
+      if (msg2.tag != TAG_DELIVERY) {
+        std::cout << msg.data << std::endl;
         throw("Error");
-      }
-      if (msg.split_c().size() != 3) {
+        break;
+      } 
+      if (msg2.split_c().size() != 3) {
         throw("Other Error");
+        break;
       }
+      std::cout << msg2.split_c().at(1) << ": " << msg2.split_c().at(2);
     } 
   } catch (const std::runtime_error &ex) {
     throw("Error");
     conn.close();
     return 1;
   }
-
+  conn.close();
   return 0;
 }

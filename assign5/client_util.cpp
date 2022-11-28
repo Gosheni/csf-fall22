@@ -31,7 +31,7 @@ void send(Connection &conn, Message &msg) {
 
 void receive(Connection &conn, Message &msg, bool throw_err) {
   if (!conn.receive(msg)) {
-    if (conn.get_last_result() != Connection::INVALID_MSG) {
+    if (conn.get_last_result() == Connection::INVALID_MSG) {
       throw("Invalid message");
     } else {
       throw("Server could not receive message");
