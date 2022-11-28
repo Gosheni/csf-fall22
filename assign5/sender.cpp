@@ -30,34 +30,22 @@ int main(int argc, char **argv) {
   }
 
   // TODO: send slogin message
-  Message msg;
-  msg.tag = TAG_SLOGIN;
-  msg.data = username;
-  if (!conn.send(msg)) {
-    std::cout << msg.tag << ":" << msg.data << std::endl;
-    std::cerr << "Error connecting to server\n";
-    return 1;
-  }
-
-  Message msg2;
-  if (!conn.receive(msg2)) {
-    std::cout << msg2.tag << ":" << msg2.data << std::endl;
-    std::cerr << "Error connecting to server\n";
-    return 1;
-  }
 
   // TODO: loop reading commands from user, sending messages to
   //       server as appropriate
-  while (conn.is_open()) {
-    std::string m;
-    std::cin >> m;
-    int index = m.find(":");
-    
+  try {  
     Message msg;
-    msg.tag = m.substr(0, index);
-    msg.data = m.substr(index+1);
+    send(conn, msg);
+    receive(conn, msg, true);
 
-    if (msg.tag == TAG_QUIT) break;
+    for (;;) {
+      receive(conn, msg, true);
+      if (msg.tag == TAG_QUIT) break;
+    } 
+  } catch (const std::runtime_error &ex) {
+    throw("Error");
+    conn.close();
+    return 1;
   }
 
   return 0;

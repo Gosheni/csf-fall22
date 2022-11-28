@@ -20,6 +20,19 @@ struct Message {
     : tag(tag), data(data) { }
 
   // TODO: you could add helper functions
+  std::vector<std::string> split_c() {
+    std::vector<std::string> res;
+    int prev = 0;
+    for (size_t i = 0; i < data.length(); i++) {
+      if (data[i] == ':') {
+        res.push_back(data.substr(prev, i-prev));
+        prev = i+1;
+      }
+    }
+    res.push_back(data.substr(prev));
+
+    return res;
+  }
 };
 
 // standard message tags (note that you don't need to worry about

@@ -13,5 +13,7 @@ std::string rtrim(const std::string &s);
 std::string trim(const std::string &s);
 
 // you can add additional declarations here...
+void send(Connection &conn, Message &msg);
+void receive(Connection &conn, Message &msg, bool throw_err);
 
 #endif // CLIENT_UTIL_H
