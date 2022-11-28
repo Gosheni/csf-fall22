@@ -33,6 +33,12 @@ struct Message {
 
     return res;
   }
+
+  bool is_lowercase() {
+    for (size_t i = 0; i < data.length(); i++) 
+      if (isupper(data[i])) return false;
+    return true;
+  }
 };
 
 // standard message tags (note that you don't need to worry about

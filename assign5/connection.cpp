@@ -73,10 +73,17 @@ bool Connection::receive(Message &msg) {
   }
 
   std::string str(buf);
-  int index = str.find(":");
-    
+  auto index = str.find(":");
+  if (index == std::string::npos) {
+    m_last_result = INVALID_MSG;
+  }
+
   msg.tag = str.substr(0, index);
   msg.data = str.substr(index+1);
+
+  if (msg.data.empty() || msg.is_lowercase()) {
+    m_last_result = INVALID_MSG;
+  }
 
   m_last_result = SUCCESS;
   return true;

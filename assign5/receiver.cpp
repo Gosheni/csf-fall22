@@ -42,6 +42,9 @@ int main(int argc, char **argv) {
 
     for (;;) {
       receive(conn, msg, true);
+      if (msg.tag != TAG_DELIVERY) {
+        throw("Error");
+      }
       if (msg.split_c().size() != 3) {
         throw("Other Error");
       }
