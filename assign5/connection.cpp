@@ -56,6 +56,7 @@ bool Connection::send(const Message &msg) {
   std::string n = ss.str();
   if (rio_writen(m_fd, n.c_str(), n.size()) != (ssize_t) n.size()) {
     m_last_result = EOF_OR_ERROR;
+    std::cerr << "Error\n";
     return false;
   } else {
     m_last_result = SUCCESS;
@@ -69,8 +70,9 @@ bool Connection::receive(Message &msg) {
   // make sure that m_last_result is set appropriately
   assert(is_open());
   char buf[Message::MAX_LEN+1];
-  if (rio_readlineb(&m_fdbuf, buf, Message::MAX_LEN) < 0) {
+  if (rio_readlineb(&m_fdbuf, buf, Message::MAX_LEN) <= 0) {
     m_last_result = EOF_OR_ERROR;
+    std::cerr << "Error\n";
     return false;
   }
 

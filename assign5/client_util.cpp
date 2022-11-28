@@ -25,16 +25,16 @@ std::string trim(const std::string &s) {
 
 void send(Connection &conn, Message &msg) {
   if (!conn.send(msg)) {
-    std::cerr << "Error";
+    std::cerr << "Error\n";
   }
 }
 
 void receive(Connection &conn, Message &msg, bool throw_err) {
   if (!conn.receive(msg)) {
     if (conn.get_last_result() == Connection::INVALID_MSG) {
-      std::cerr << "Invalid message";
+      std::cerr << "Invalid message\n";
     } else {
-      std::cerr << "Server could not receive message";
+      std::cerr << "Server could not receive message\n";
     }
   }
   if (msg.tag == TAG_ERR && throw_err) {
