@@ -22,6 +22,10 @@ int main(int argc, char **argv) {
 
   // TODO: connect to server
   conn.connect(server_hostname, server_port);
+  if (!conn.is_open()) {
+    std::cerr << "Connection Failed!\n";
+    return 1;
+  }
 
   // TODO: send rlogin and join messages (expect a response from
   //       the server for each one)

@@ -4,6 +4,7 @@
 #include "csapp.h"
 #include "message.h"
 #include "connection.h"
+#include <iostream>
 
 Connection::Connection()
   : m_fd(-1)
@@ -22,33 +23,36 @@ void Connection::connect(const std::string &hostname, int port) {
   std::stringstream str1;
   str1 << port;
   std::string buffer = str1.str();
-  m_fd = open_clientfd(hostname.c_str(), buffer.c_str());
+  m_fd = Open_clientfd(hostname.c_str(), buffer.c_str());
   // TODO: call rio_readinitb to initialize the rio_t object
-  rio_readinitb(&m_fdbuf, m_fd);
+  if (m_fd >= 0) rio_readinitb(&m_fdbuf, m_fd);
 }
 
 Connection::~Connection() {
   // TODO: close the socket if it is open
-  close();
+  if (is_open()) close();
 }
 
 bool Connection::is_open() const {
   // TODO: return true if the connection is open
-  if (m_fd < 0) return false;
-  return true;
+  return m_fd >= 0;
 }
 
 void Connection::close() {
   // TODO: close the connection if it is open
-  Close(m_fd);
+  if (is_open()) close();
+  m_fd = -1;
 }
 
 bool Connection::send(const Message &msg) {
   // TODO: send a message
   // return true if successful, false if not
   // make sure that m_last_result is set appropriately
-  std::string n = msg.data;
-  if (rio_writen(m_fd, m_fdbuf.rio_bufptr, n.length()) != (int)n.length()) {
+  assert(is_open());
+  std::stringstream ss;
+  ss << msg.tag + ":" + msg.data + "\n";
+  std::string n = ss.str();
+  if (rio_writen(m_fd, n.c_str(), n.size()) != (ssize_t) n.size()) {
     m_last_result = EOF_OR_ERROR;
     return false;
   } else {
@@ -61,15 +65,19 @@ bool Connection::receive(Message &msg) {
   // TODO: receive a message, storing its tag and data in msg
   // return true if successful, false if not
   // make sure that m_last_result is set appropriately
-  if (rio_readlineb(&m_fdbuf, m_fdbuf.rio_bufptr, msg.MAX_LEN) < 0) {
+  assert(is_open());
+  char buf[Message::MAX_LEN+1];
+  if (rio_readlineb(&m_fdbuf, buf, Message::MAX_LEN) < 0) {
     m_last_result = EOF_OR_ERROR;
-    msg.data = m_fdbuf.rio_buf;
-    msg.tag = TAG_ERR;
     return false;
-  } else {
-    m_last_result = SUCCESS;
-    msg.data = m_fdbuf.rio_buf;
-    msg.tag = TAG_OK;
-    return true;
   }
+
+  std::string str(buf);
+  int index = str.find(":");
+    
+  msg.tag = str.substr(0, index);
+  msg.data = str.substr(index+1);
+
+  m_last_result = SUCCESS;
+  return true;
 }
