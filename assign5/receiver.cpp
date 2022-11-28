@@ -50,17 +50,17 @@ int main(int argc, char **argv) {
       receive(conn, msg2, true);
       if (msg2.tag != TAG_DELIVERY) {
         std::cout << msg.data << std::endl;
-        throw("Error");
+        std::cerr << "Error";
         break;
       } 
       if (msg2.split_c().size() != 3) {
-        throw("Other Error");
+        std::cerr << "Other Error";
         break;
       }
       std::cout << msg2.split_c().at(1) << ": " << msg2.split_c().at(2);
     } 
   } catch (const std::runtime_error &ex) {
-    throw("Error");
+    std::cerr << "Error";
     conn.close();
     return 1;
   }

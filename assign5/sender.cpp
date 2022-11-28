@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
       receive(conn, msg2, true);
     } 
   } catch (const std::runtime_error &ex) {
-    throw("Error");
+    std::cerr << "Error";
     conn.close();
     return 1;
   }
