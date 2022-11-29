@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   Connection conn;
   conn.connect(server_hostname, server_port);
   if (!conn.is_open()) {
-    std::cerr << "Connection Failed!\n";
+    std::cerr << "Open_clientfd error: Connection refused\n";
     return 1;
   }
 
