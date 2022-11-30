@@ -32,9 +32,10 @@ int main(int argc, char **argv) {
 
   // TODO: loop waiting for messages from server
   //       (which should be tagged with TAG_DELIVERY)
-  
+
   try {  
     Message msg;
+
     msg.tag = TAG_RLOGIN;
     msg.data = username;
     send(conn, msg);
@@ -44,21 +45,21 @@ int main(int argc, char **argv) {
     msg.data = room_name;
     send(conn, msg);
     receive(conn, msg, true);
-
-    for (;;) {
-      Message msg2;
-      receive(conn, msg2, true);
-      if (msg2.split_c().size() != 3) {
-        std::cerr << "Other Error\n";
-        break;
-      }
-      std::cout << msg2.split_c().at(1) << ": " << msg2.split_c().at(2);
-    } 
   } catch (const std::runtime_error &ex) {
-    std::cerr << "Error\n";
+    std::cerr << ex.what();
     conn.close();
     return 1;
   }
+
+  for (;;) {
+    Message msg2;
+    receive(conn, msg2, false);
+    if (msg2.split_c().size() != 3) {
+      std::cerr << "Invalid message format\n";
+      break;
+    }
+    std::cout << msg2.split_c().at(1) << ": " << msg2.split_c().at(2);
+  } 
   conn.close();
   return 0;
 }

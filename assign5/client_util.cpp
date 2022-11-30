@@ -25,19 +25,19 @@ std::string trim(const std::string &s) {
 
 void send(Connection &conn, Message &msg) {
   if (!conn.send(msg)) {
-    std::cerr << msg.data;
+    throw std::runtime_error(msg.data.c_str());
   }
 }
 
 void receive(Connection &conn, Message &msg, bool throw_err) {
   if (!conn.receive(msg)) {
     if (conn.get_last_result() == Connection::INVALID_MSG) {
-      std::cerr << msg.data;
+      throw std::runtime_error(msg.data.c_str());
     } else {
-      std::cerr << msg.data;
+      throw std::runtime_error(msg.data.c_str());
     }
   }
   if (msg.tag == TAG_ERR && throw_err) {
-    std::cerr << msg.data;
+    throw std::runtime_error(msg.data.c_str());
   } 
 }

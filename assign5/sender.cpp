@@ -39,39 +39,45 @@ int main(int argc, char **argv) {
     msg.data = username;
     send(conn, msg);
     receive(conn, msg, true);
-
-    for (;;) {
-      std::cout << "> ";
-      std::cout.flush();
-
-      std::string buf;
-      std::getline(std::cin, buf);
-
-      Message msg2;
-
-      if (buf.compare("/quit") == 0) {
-        msg2.tag = TAG_QUIT;
-        send(conn, msg2);
-        receive(conn, msg2, true);
-        break;
-      }
-      else if (buf.compare("/leave") == 0) msg2.tag = TAG_LEAVE;
-      else if (buf.substr(0, 6).compare("/join ") == 0) {
-        msg2.tag = TAG_JOIN;
-        msg2.data = buf.substr(6);
-      } 
-      else {
-        msg2.tag = TAG_SENDALL;
-        msg2.data = buf;
-      }
-      send(conn, msg2);
-      receive(conn, msg2, true);
-    } 
   } catch (const std::runtime_error &ex) {
-    std::cerr << "Error\n";
+    std::cerr << ex.what();
     conn.close();
     return 1;
   }
+  
+  for (;;) {
+    std::cout << "> ";
+    std::cout.flush();
+
+    std::string buf;
+    std::getline(std::cin, buf);
+
+    Message msg2;
+
+    if (buf.compare("/quit") == 0) {
+      msg2.tag = TAG_QUIT;
+      send(conn, msg2);
+      receive(conn, msg2, true);
+      break;
+    }
+    else if (buf.compare("/leave") == 0) msg2.tag = TAG_LEAVE;
+    else if (buf.substr(0, 6).compare("/join ") == 0) {
+      msg2.tag = TAG_JOIN;
+      msg2.data = buf.substr(6);
+    } 
+    else {
+      msg2.tag = TAG_SENDALL;
+      msg2.data = buf;
+    }
+    try {
+      send(conn, msg2);
+      receive(conn, msg2, true);
+    } catch (const std::runtime_error &ex) {
+      std::cerr << ex.what();
+      continue;
+    }
+  } 
+  
   conn.close();
   return 0;
 }
