@@ -50,10 +50,31 @@ bool is_valid_login_msg(Message msg) {
   return true;
 }
 
+bool is_valid_join_msg(Message msg) {
+  if (msg.tag != TAG_JOIN) {
+    return false;
+  }
+  if (msg.split_c().size() > 1) {
+    return false;
+  }
+  return true;
+}
+
 void chat_w_receiver(User* user, Connection* conn, Server *server) {
   bool send_ok = true;
 
-  // Let the user join the room
+  Message msg;
+  if (!conn->receive(msg)) {
+    conn->send(Message(TAG_ERR, "Couldn't receive message!"));
+    return;
+  }
+  if (!is_valid_join_msg(msg)) {
+    conn->send(Message(TAG_ERR, "Invalid Message!"));
+    return;
+  }
+
+  Room *room = server->find_or_create_room(msg.data);
+  room->add_member(user);
 
   for (;;) {
     Message *msg = user->mqueue.dequeue();
@@ -64,10 +85,39 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
     }
     if (!send_ok) break;
   }
-  return;
 }
 
 void chat_w_sender(User* user, Connection* conn, Server *server) {
+  for (;;) {
+    Message msg;
+    if (!conn->receive(msg)) {
+      break;
+    }      
+    if (msg.data.length() >= Message::MAX_LEN) {
+      conn->send(Message(TAG_ERR, "Message is too long!"));
+    }
+
+    Room *room;
+    if (msg.tag == TAG_JOIN) {
+      room = server->find_or_create_room(msg.data);
+      room->add_member(user);
+    } else if (msg.tag == TAG_LEAVE) {
+      if (room != nullptr) {
+        room->remove_member(user);
+      } else {
+        conn->send(Message(TAG_ERR, "Room not joined!"));
+      }
+    } else if (msg.tag == TAG_SENDALL) {
+      if (room != nullptr) {
+        room->broadcast_message(user->username, msg.data);
+      } else {
+        conn->send(Message(TAG_ERR, "Room not joined!"));
+      }
+    } else {
+      conn->send(Message(TAG_ERR, "Invalid tag!"));
+    }
+  }
+
   return;
 }
 
@@ -159,7 +209,7 @@ void Server::handle_client_requests() {
 Room *Server::find_or_create_room(const std::string &room_name) {
   // TODO: return a pointer to the unique Room object representing
   //       the named chat room, creating a new one if necessary
-  Guard(*m_lock);
+  Guard G(m_lock);
   
   Room *res;
   auto index = m_rooms.find(room_name);
