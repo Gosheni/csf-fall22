@@ -6,21 +6,33 @@
 
 Room::Room(const std::string &room_name)
   : room_name(room_name) {
-  // TODO: initialize the mutex
+  pthread_mutex_init(&lock, nullptr);
 }
 
 Room::~Room() {
-  // TODO: destroy the mutex
+  pthread_mutex_destroy(&lock);
 }
 
 void Room::add_member(User *user) {
-  // TODO: add User to the room
+  Guard G(lock);
+  members.insert(user);
 }
 
 void Room::remove_member(User *user) {
-  // TODO: remove User from the room
+  Guard G(lock);
+  members.erase(user);
 }
 
 void Room::broadcast_message(const std::string &sender_username, const std::string &message_text) {
   // TODO: send a message to every (receiver) User in the room
+  Guard G(lock);
+
+  for (std::set<User *>::iterator itr = members.begin(); itr != members.end(); itr++){
+    if((*itr)->username != sender_username){
+      Message m;
+      m.tag = TAG_DELIVERY;
+      m.data = "delivery:" + room_name + ":" + sender_username + ":" + message_text;
+      (*itr)->mqueue.enqueue(&m);
+    }
+  }
 }
