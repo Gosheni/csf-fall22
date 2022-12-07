@@ -3,6 +3,7 @@
 #include "message_queue.h"
 #include "user.h"
 #include "room.h"
+#include "client_util.h"
 
 Room::Room(const std::string &room_name)
   : room_name(room_name) {
@@ -27,12 +28,11 @@ void Room::broadcast_message(const std::string &sender_username, const std::stri
   // TODO: send a message to every (receiver) User in the room
   Guard G(lock);
 
-  for (std::set<User *>::iterator itr = members.begin(); itr != members.end(); itr++){
+  for (std::set<User *>::iterator itr = members.begin(); itr != members.end(); itr++) {
     if((*itr)->username != sender_username){
-      Message m;
-      m.tag = TAG_DELIVERY;
-      m.data = "delivery:" + room_name + ":" + sender_username + ":" + message_text;
-      (*itr)->mqueue.enqueue(&m);
+      std::string msg = trim(room_name) + ":" + trim(sender_username) + ":" + trim(message_text);
+      Message *m = new Message(TAG_DELIVERY, msg);
+      (*itr)->mqueue.enqueue(m);
     }
   }
 }

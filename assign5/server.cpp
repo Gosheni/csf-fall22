@@ -12,6 +12,7 @@
 #include "room.h"
 #include "guard.h"
 #include "server.h"
+#include "client_util.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Server implementation data types
@@ -75,6 +76,7 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
 
   Room *room = server->find_or_create_room(msg.data);
   room->add_member(user);
+  conn->send(Message(TAG_OK, "welcome"));
 
   for (;;) {
     Message *msg = user->mqueue.dequeue();
@@ -82,8 +84,8 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
       if (!conn->send(*msg)) {
         send_ok = false;
       }
-      delete msg;
     }
+    delete msg;
     if (!send_ok) break;
   }
 }
@@ -101,11 +103,9 @@ void chat_w_sender(User* user, Connection* conn, Server *server) {
     Room *room;
     if (msg.tag == TAG_JOIN) {
       room = server->find_or_create_room(msg.data);
-      room->add_member(user);
-      conn->send(Message(TAG_OK, "welcome"));
+      conn->send(Message(TAG_OK, "joined room " + trim(msg.data)));
     } else if (msg.tag == TAG_LEAVE) {
       if (room != nullptr) {
-        room->remove_member(user);
         conn->send(Message(TAG_OK, "left room"));
       } else {
         conn->send(Message(TAG_ERR, "Room not joined!"));
@@ -143,7 +143,7 @@ void *worker(void *arg) {
       return nullptr;
     }
   }
-  if (!is_valid_login_msg(msg)){
+  if (!is_valid_login_msg(msg)) {
     return nullptr;
   }
   
@@ -159,7 +159,7 @@ void *worker(void *arg) {
   //       separate helper functions for each of these possibilities
   //       is a good idea)
   User* user = new User(msg.data);
-  conn->send(Message(TAG_OK, "Logged in as " + msg.data));
+  conn->send(Message(TAG_OK, "Logged in as " + trim(msg.data))); //trim func in clientutil
 
   if (msg.tag == TAG_RLOGIN) {
     chat_w_receiver(user, conn, serv);
@@ -196,8 +196,10 @@ bool Server::listen() {
   str1 << m_port;
   std::string buffer = str1.str();
   int rc = Open_listenfd(buffer.c_str());
-  if (rc < 0) return false;
-  else{
+  if (rc < 0) {
+    std::cerr << "Couldn't open server socket";
+    return false;
+  } else {
     m_ssock = rc;
     return true;
   } 
@@ -206,14 +208,19 @@ bool Server::listen() {
 void Server::handle_client_requests() {
   // TODO: infinite loop calling accept or Accept, starting a new
   //       pthread for each connected client
+  pthread_attr_t temp;
+  pthread_attr_init(&temp);
+  pthread_attr_setdetachstate(&temp, 1);
+
   while (1) {
     int clientfd = Accept(m_ssock, NULL, NULL);
     Connection *conn = new Connection(clientfd);
-    ClientData *info = new ClientData(conn, this);
+    ClientData *info = (ClientData *) malloc(sizeof(struct ClientData));
+    info->conn = conn;
+    info->server = this;
     pthread_t thr_id;
-    if (pthread_create(&thr_id, NULL, worker, info) < 0) {
+    if (pthread_create(&thr_id, &temp, worker, info) < 0) {
       std::cerr << "pthread_create failed";
-      delete info;
     }
   }
 }
@@ -223,13 +230,11 @@ Room *Server::find_or_create_room(const std::string &room_name) {
   //       the named chat room, creating a new one if necessary
   Guard G(m_lock);
   
-  Room *res;
   auto index = m_rooms.find(room_name);
   if (index == m_rooms.end()) {
-    res = new Room(room_name);
+    Room *res = new Room(room_name);
     m_rooms.insert({room_name, res});
-  } else {
-    res = index->second;
-  }
-  return res;
+    return res;
+  } 
+  return index->second;
 }
