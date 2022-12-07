@@ -85,6 +85,8 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
     }
     if (!send_ok) break;
   }
+
+  room->remove_member(user);
 }
 
 void chat_w_sender(User* user, Connection* conn, Server *server) {
