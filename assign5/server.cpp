@@ -82,6 +82,7 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
       if (!conn->send(*msg)) {
         send_ok = false;
       }
+      delete msg;
     }
     if (!send_ok) break;
   }
@@ -101,23 +102,29 @@ void chat_w_sender(User* user, Connection* conn, Server *server) {
     if (msg.tag == TAG_JOIN) {
       room = server->find_or_create_room(msg.data);
       room->add_member(user);
+      conn->send(Message(TAG_OK, "welcome"));
     } else if (msg.tag == TAG_LEAVE) {
       if (room != nullptr) {
         room->remove_member(user);
+        conn->send(Message(TAG_OK, "left room"));
       } else {
         conn->send(Message(TAG_ERR, "Room not joined!"));
       }
     } else if (msg.tag == TAG_SENDALL) {
       if (room != nullptr) {
         room->broadcast_message(user->username, msg.data);
+        conn->send(Message(TAG_OK, "message sent"));
       } else {
         conn->send(Message(TAG_ERR, "Room not joined!"));
       }
+    } else if (msg.tag == TAG_QUIT) {
+      room->remove_member(user);
+      conn->send(Message(TAG_OK, "bye!"));
+      break;
     } else {
       conn->send(Message(TAG_ERR, "Invalid tag!"));
     }
   }
-
   return;
 }
 
@@ -131,13 +138,15 @@ void *worker(void *arg) {
 
   Message msg;
   if (!conn->receive(msg)) {
-    conn->send(Message(TAG_ERR, "Invalid Message!"));
+    if (conn->get_last_result() == conn->INVALID_MSG) {
+      conn->send(Message(TAG_ERR, "Invalid Message!"));
+      return nullptr;
+    }
+  }
+  if (!is_valid_login_msg(msg)){
     return nullptr;
   }
-  if (conn->get_last_result() == conn->INVALID_MSG || !is_valid_login_msg(msg)) {
-    conn->send(Message(TAG_ERR, "Invalid Message!"));
-    return nullptr;
-  }
+  
   // TODO: use a static cast to convert arg from a void* to
   //       whatever pointer type describes the object(s) needed
   //       to communicate with a client (sender or receiver)
@@ -188,7 +197,10 @@ bool Server::listen() {
   std::string buffer = str1.str();
   int rc = Open_listenfd(buffer.c_str());
   if (rc < 0) return false;
-  else return true;
+  else{
+    m_ssock = rc;
+    return true;
+  } 
 }
 
 void Server::handle_client_requests() {
