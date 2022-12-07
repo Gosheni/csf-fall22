@@ -81,8 +81,8 @@ void chat_w_receiver(User* user, Connection* conn, Server *server) {
       if (!conn->send(*msg)) {
         send_ok = false;
       }
+      delete msg;
     }
-    delete msg;
     if (!send_ok) break;
   }
 }
@@ -116,7 +116,6 @@ void chat_w_sender(User* user, Connection* conn, Server *server) {
         conn->send(Message(TAG_ERR, "Room not joined!"));
       }
     } else if (msg.tag == TAG_QUIT) {
-      room->remove_member(user);
       conn->send(Message(TAG_OK, "bye!"));
       break;
     } else {
