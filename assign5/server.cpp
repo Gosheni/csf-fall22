@@ -98,7 +98,7 @@ void chat_w_sender(User* user, Connection* conn, Server *server) {
       conn->send(Message(TAG_ERR, "Message is too long!"));
     }
 
-    Room *room;
+    Room *room = nullptr;
     if (msg.tag == TAG_JOIN) {
       room = server->find_or_create_room(msg.data);
       conn->send(Message(TAG_OK, "joined room " + trim(msg.data)));
