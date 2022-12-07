@@ -25,10 +25,7 @@ struct ClientData {
   Connection *conn;
   Server *server;
 
-  ClientData(Connection *conn, Server *server) {
-    conn = conn;
-    server = server;
-  }
+  ClientData(Connection *conn, Server *server) : conn(conn), server(server) { }
 
   ~ClientData() {
     delete conn;
@@ -94,6 +91,7 @@ void chat_w_sender(User* user, Connection* conn, Server *server) {
   for (;;) {
     Message msg;
     if (!conn->receive(msg)) {
+      std::cerr << "Invalid message!";
       break;
     }      
     if (msg.data.length() >= Message::MAX_LEN) {
@@ -215,9 +213,7 @@ void Server::handle_client_requests() {
   while (1) {
     int clientfd = Accept(m_ssock, NULL, NULL);
     Connection *conn = new Connection(clientfd);
-    ClientData *info = (ClientData *) malloc(sizeof(struct ClientData));
-    info->conn = conn;
-    info->server = this;
+    ClientData *info = new ClientData(conn, this);
     pthread_t thr_id;
     if (pthread_create(&thr_id, &temp, worker, info) < 0) {
       std::cerr << "pthread_create failed";
