@@ -192,7 +192,7 @@ bool Server::listen() {
   std::stringstream str1;
   str1 << m_port;
   std::string buffer = str1.str();
-  int rc = Open_listenfd(buffer.c_str());
+  int rc = open_listenfd(buffer.c_str());
   if (rc < 0) {
     std::cerr << "Couldn't open server socket";
     return false;
